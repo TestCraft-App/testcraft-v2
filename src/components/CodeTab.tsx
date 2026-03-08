@@ -128,6 +128,7 @@ export function CodeTab({ pendingAutomation, onClearPending }: CodeTabProps) {
                 <CodeResult
                     content={currentEntry.content}
                     isStreaming={isCurrentStreaming}
+                    language={language}
                 />
             )}
         </div>
