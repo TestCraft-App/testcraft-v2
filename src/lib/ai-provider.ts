@@ -20,8 +20,8 @@ export const PROVIDER_MODELS: Record<AIProviderType, string[]> = {
 };
 
 export const DEFAULT_MODELS: Record<AIProviderType, string> = {
-    openai: 'gpt-4.1',
-    anthropic: 'claude-sonnet-4-6',
+    openai: 'gpt-4o-mini',
+    anthropic: 'claude-haiku-4-5-20251001',
     google: 'gemini-2.5-flash',
 };
 

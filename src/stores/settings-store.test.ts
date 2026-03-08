@@ -9,7 +9,7 @@ describe('useSettingsStore', () => {
             provider: 'openai',
             apiKey: '',
             apiKeys: { openai: '', anthropic: '', google: '' },
-            model: 'gpt-4o',
+            model: 'gpt-4o-mini',
             framework: 'playwright',
             language: 'typescript',
             usePOM: false,
@@ -20,7 +20,7 @@ describe('useSettingsStore', () => {
     it('starts with default settings', () => {
         const state = useSettingsStore.getState();
         expect(state.provider).toBe('openai');
-        expect(state.model).toBe('gpt-4o');
+        expect(state.model).toBe('gpt-4o-mini');
         expect(state.framework).toBe('playwright');
         expect(state.language).toBe('typescript');
     });
@@ -29,7 +29,7 @@ describe('useSettingsStore', () => {
         useSettingsStore.getState().updateSettings({ provider: 'anthropic' });
         const state = useSettingsStore.getState();
         expect(state.provider).toBe('anthropic');
-        expect(state.model).toBe('claude-sonnet-4-6');
+        expect(state.model).toBe('claude-haiku-4-5-20251001');
     });
 
     it('persists settings to chrome.storage', () => {

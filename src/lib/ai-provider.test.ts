@@ -224,8 +224,8 @@ describe('PROVIDER_MODELS', () => {
 
 describe('DEFAULT_MODELS', () => {
     it('has a default model for each provider', () => {
-        expect(DEFAULT_MODELS.openai).toBe('gpt-4.1');
-        expect(DEFAULT_MODELS.anthropic).toBe('claude-sonnet-4-6');
+        expect(DEFAULT_MODELS.openai).toBe('gpt-4o-mini');
+        expect(DEFAULT_MODELS.anthropic).toBe('claude-haiku-4-5-20251001');
         expect(DEFAULT_MODELS.google).toBe('gemini-2.5-flash');
     });
 });

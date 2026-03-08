@@ -39,7 +39,7 @@ describe('SettingsTab', () => {
         await user.selectOptions(screen.getByLabelText('AI Provider'), 'anthropic');
 
         const modelSelect = screen.getByLabelText('Model') as HTMLSelectElement;
-        expect(modelSelect.value).toBe('claude-sonnet-4-6');
+        expect(modelSelect.value).toBe('claude-haiku-4-5-20251001');
     });
 
     it('renders framework dropdown', () => {

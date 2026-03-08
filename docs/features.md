@@ -168,7 +168,7 @@ The Settings tab is organized into **three card sections**, each with an icon he
 | Theme | Segmented control | Light, Dark, System |
 
 **Smart behaviors:**
-- Changing the provider automatically selects that provider's default model (e.g. switching to Anthropic selects `claude-sonnet-4-20250514`, switching to OpenAI selects `gpt-4.1`).
+- Changing the provider automatically selects that provider's default model (e.g. switching to Anthropic selects `claude-haiku-4-5-20251001`, switching to OpenAI selects `gpt-4o-mini`).
 - Changing to Cypress automatically limits language options to JavaScript and TypeScript. If you were on Python, it resets to JavaScript.
 - All settings persist in `chrome.storage.local` under the key `settings`.
 
