@@ -1,0 +1,36 @@
+{
+    "name": "testcraft-v2",
+    "version": "2.0.0",
+    "description": "TestCraft v2 - AI testing companion for your browser",
+    "type": "module",
+    "scripts": {
+        "dev": "wxt",
+        "build": "wxt build",
+        "zip": "wxt zip",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
+        "postinstall": "wxt prepare"
+    },
+    "dependencies": {
+        "axe-core": "^4.11.1",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "wxt": "^0.20.18",
+        "zustand": "^5.0.11"
+    },
+    "devDependencies": {
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
+        "@testing-library/user-event": "^14.6.1",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@wxt-dev/module-react": "^1.2.1",
+        "autoprefixer": "^10.4.27",
+        "jsdom": "^28.1.0",
+        "postcss": "^8.5.8",
+        "tailwindcss": "^3.4.19",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18"
+    }
+}
