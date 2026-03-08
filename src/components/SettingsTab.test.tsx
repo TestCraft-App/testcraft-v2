@@ -15,12 +15,15 @@ describe('SettingsTab', () => {
             language: 'typescript',
             usePOM: false,
             useProxy: false,
+            theme: 'light',
         });
     });
 
-    it('renders settings heading', () => {
+    it('renders section headings', () => {
         render(<SettingsTab />);
-        expect(screen.getByText('Settings', { selector: 'h2' })).toBeInTheDocument();
+        expect(screen.getByText('AI Configuration')).toBeInTheDocument();
+        expect(screen.getByText('Test Configuration')).toBeInTheDocument();
+        expect(screen.getByText('Preferences')).toBeInTheDocument();
     });
 
     it('renders provider dropdown with OpenAI selected', () => {
@@ -64,14 +67,14 @@ describe('SettingsTab', () => {
         expect(options).toEqual(['javascript', 'typescript', 'java', 'csharp', 'python']);
     });
 
-    it('toggles POM checkbox', async () => {
+    it('toggles POM switch', async () => {
         const user = userEvent.setup();
         render(<SettingsTab />);
 
-        const checkbox = screen.getByLabelText('Use Page Object Model') as HTMLInputElement;
-        expect(checkbox.checked).toBe(false);
+        const toggle = screen.getByRole('switch');
+        expect(toggle).toHaveAttribute('aria-checked', 'false');
 
-        await user.click(checkbox);
+        await user.click(toggle);
         expect(useSettingsStore.getState().usePOM).toBe(true);
     });
 
@@ -81,5 +84,23 @@ describe('SettingsTab', () => {
 
         await user.type(screen.getByLabelText('API Key'), 'sk-test-123');
         expect(useSettingsStore.getState().apiKey).toBe('sk-test-123');
+    });
+
+    it('renders theme selector with Light active by default', () => {
+        render(<SettingsTab />);
+        const lightBtn = screen.getByText('Light');
+        const darkBtn = screen.getByText('Dark');
+        const systemBtn = screen.getByText('System');
+        expect(lightBtn).toBeInTheDocument();
+        expect(darkBtn).toBeInTheDocument();
+        expect(systemBtn).toBeInTheDocument();
+    });
+
+    it('changes theme to dark', async () => {
+        const user = userEvent.setup();
+        render(<SettingsTab />);
+
+        await user.click(screen.getByText('Dark'));
+        expect(useSettingsStore.getState().theme).toBe('dark');
     });
 });

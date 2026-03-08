@@ -38,15 +38,15 @@ export function AccessibilityTab() {
                 disabled={isScanning}
                 className={`w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                     isScanning
-                        ? 'bg-gray-100 text-gray-400'
-                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                        ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600'
                 }`}
             >
                 {isScanning ? 'Scanning...' : 'Run Accessibility Check'}
             </button>
 
             {error && (
-                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">
                     <p className="font-medium">Error</p>
                     <p>{error}</p>
                 </div>
@@ -55,7 +55,7 @@ export function AccessibilityTab() {
             {!error && violations.length > 0 && <AccessibilityResult violations={violations} />}
 
             {!error && !isScanning && violations.length === 0 && (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                     Click the button above to scan the current page for WCAG accessibility violations.
                 </p>
             )}

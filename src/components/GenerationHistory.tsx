@@ -33,24 +33,24 @@ export function GenerationHistory({ entries, currentIndex, onNavigate, onUpdateL
     };
 
     return (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => onNavigate(currentIndex - 1)}
                         disabled={!hasPrev}
-                        className="rounded p-1 text-gray-500 hover:bg-gray-200 disabled:opacity-30"
+                        className="rounded p-1 text-gray-500 hover:bg-gray-200 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700"
                         aria-label="Previous generation"
                     >
                         ◀
                     </button>
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
                         Gen {currentIndex + 1} of {entries.length}
                     </span>
                     <button
                         onClick={() => onNavigate(currentIndex + 1)}
                         disabled={!hasNext}
-                        className="rounded p-1 text-gray-500 hover:bg-gray-200 disabled:opacity-30"
+                        className="rounded p-1 text-gray-500 hover:bg-gray-200 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700"
                         aria-label="Next generation"
                     >
                         ▶
@@ -58,7 +58,7 @@ export function GenerationHistory({ entries, currentIndex, onNavigate, onUpdateL
                 </div>
                 <button
                     onClick={onRemove}
-                    className="text-xs text-gray-400 hover:text-gray-600"
+                    className="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                 >
                     Remove
                 </button>
@@ -70,17 +70,17 @@ export function GenerationHistory({ entries, currentIndex, onNavigate, onUpdateL
                         onChange={(e) => setEditText(e.target.value)}
                         onBlur={handleSaveEdit}
                         onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
-                        className="min-w-0 flex-1 rounded border border-gray-300 px-1 text-xs text-gray-600"
+                        className="min-w-0 flex-1 rounded border border-gray-300 px-1 text-xs text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
                         autoFocus
                     />
                 ) : (
                     <>
-                        <p className="min-w-0 flex-1 truncate text-xs text-gray-500">
+                        <p className="min-w-0 flex-1 truncate text-xs text-gray-500 dark:text-gray-400">
                             {current.elementLabel}
                         </p>
                         <button
                             onClick={handleStartEdit}
-                            className="shrink-0 text-gray-400 hover:text-gray-600"
+                            className="shrink-0 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                             aria-label="Edit label"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">

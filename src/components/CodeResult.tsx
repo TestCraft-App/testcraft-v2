@@ -16,10 +16,10 @@ export function CodeResult({ content, isStreaming }: CodeResultProps) {
     return (
         <div className="space-y-3">
             <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700">Generated Code</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Generated Code</h3>
                 <button
                     onClick={handleCopy}
-                    className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200"
+                    className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                 >
                     Copy
                 </button>
@@ -30,8 +30,8 @@ export function CodeResult({ content, isStreaming }: CodeResultProps) {
             </pre>
 
             {isStreaming && (
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+                <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600 dark:border-gray-600 dark:border-t-indigo-400" />
                     Streaming...
                 </div>
             )}

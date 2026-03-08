@@ -3,6 +3,8 @@ import type { AIProviderType, Framework, Language } from '../lib/ai-provider';
 import { DEFAULT_MODELS, FRAMEWORK_LANGUAGES } from '../lib/ai-provider';
 import { STORAGE_KEYS } from '../lib/constants';
 
+export type Theme = 'light' | 'dark' | 'system';
+
 export interface Settings {
     provider: AIProviderType;
     apiKeys: Record<AIProviderType, string>;
@@ -11,6 +13,7 @@ export interface Settings {
     language: Language;
     usePOM: boolean;
     useProxy: boolean;
+    theme: Theme;
 }
 
 const defaultSettings: Settings = {
@@ -21,6 +24,7 @@ const defaultSettings: Settings = {
     language: 'typescript',
     usePOM: false,
     useProxy: false,
+    theme: 'light',
 };
 
 interface SettingsState extends Settings {
@@ -74,6 +78,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
             language: newState.language,
             usePOM: newState.usePOM,
             useProxy: newState.useProxy,
+            theme: newState.theme,
         };
         chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: toStore });
     },

@@ -2,7 +2,7 @@
 
 This document describes every feature in TestCraft v2, what it does from a user perspective, how it works internally, and where the code lives.
 
-Last updated: Tab restructure (Ideas + Code tabs with inline results and generation history)
+Last updated: Settings tab redesign (card sections, dark mode, theme toggle)
 
 ---
 
@@ -142,7 +142,20 @@ The scanner looks for these CSS selectors: `a[href]`, `button`, `[role="button"]
 ## 4. Settings & Multi-Provider AI
 
 **What the user sees:**
-The Settings tab has these controls:
+The Settings tab is organized into **three card sections**, each with an icon header:
+
+**AI Configuration** (brain icon)
+- AI Provider dropdown (OpenAI, Anthropic, Google)
+- API Key password input with helper text explaining where to get a key for the selected provider
+- Model dropdown (provider-specific, changes when provider changes)
+
+**Test Configuration** (code icon)
+- Test Framework dropdown (Playwright, Cypress, Selenium)
+- Language dropdown (JS, TS, Java, C#, Python — gated by framework)
+- Page Object Model **toggle switch** (replaces the old checkbox)
+
+**Preferences** (palette icon)
+- **Theme selector** — a 3-way segmented control: Light / Dark / System
 
 | Control | Type | Options |
 |---------|------|---------|
@@ -151,12 +164,19 @@ The Settings tab has these controls:
 | Model | Dropdown | Provider-specific (changes when provider changes) |
 | Test Framework | Dropdown | Playwright, Cypress, Selenium |
 | Language | Dropdown | JS, TS, Java, C#, Python (gates based on framework) |
-| Use Page Object Model | Checkbox | On/Off |
+| Use Page Object Model | Toggle switch | On/Off |
+| Theme | Segmented control | Light, Dark, System |
 
 **Smart behaviors:**
 - Changing the provider automatically selects that provider's default model (e.g. switching to Anthropic selects `claude-sonnet-4-20250514`, switching to OpenAI selects `gpt-4.1`).
 - Changing to Cypress automatically limits language options to JavaScript and TypeScript. If you were on Python, it resets to JavaScript.
 - All settings persist in `chrome.storage.local` under the key `settings`.
+
+**Dark mode:**
+- Tailwind's `darkMode: 'class'` strategy is configured in `tailwind.config.ts`.
+- `App.tsx` reads the `theme` value from the settings store and applies the `dark` class to `<html>`.
+- When set to "System", a `matchMedia('prefers-color-scheme: dark')` listener dynamically toggles the `dark` class to follow the OS preference. The listener is cleaned up on unmount or theme change.
+- All components use Tailwind `dark:` variants for backgrounds, text, borders, and interactive states. This provides full dark mode coverage across every tab and component.
 
 **AI Provider abstraction:**
 
@@ -444,7 +464,7 @@ All state is managed via Zustand stores. Here's what each store holds:
 |-------|-----------|------------|
 | `useElementStore` | `pickedElement`, `isPicking` | Yes — `pickedElement` synced to `chrome.storage.local` |
 | `usePageStore` | `inventory` (scanned elements) | No — re-scanned on panel open |
-| `useSettingsStore` | provider, apiKey, model, framework, language, usePOM, useProxy | Yes — full settings object synced to `chrome.storage.local` |
+| `useSettingsStore` | provider, apiKey, model, framework, language, usePOM, useProxy, theme | Yes — full settings object synced to `chrome.storage.local` |
 | `useIdeasStore` | entries[] (GenerationEntry with selectedIdeas), currentIndex, isStreaming, error | No — in-memory, keeps up to 10 generations |
 | `useCodeStore` | entries[] (GenerationEntry), currentIndex, isStreaming, error | No — in-memory, keeps up to 10 generations |
 | `useAccessibilityStore` | violations, explanations, isScanning, error | No — persists across tab switches within a session, resets on new scan |

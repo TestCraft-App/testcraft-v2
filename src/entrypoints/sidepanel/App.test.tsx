@@ -52,7 +52,7 @@ describe('App', () => {
         await user.click(screen.getByRole('tab', { name: 'Settings' }));
 
         expect(screen.getByRole('tab', { name: 'Settings' })).toHaveAttribute('aria-selected', 'true');
-        expect(screen.getByText('Settings', { selector: 'h2' })).toBeInTheDocument();
+        expect(screen.getByText('AI Configuration')).toBeInTheDocument();
     });
 
     it('switches back to Ideas tab from another tab', async () => {

@@ -46,14 +46,14 @@ export function TestIdeasResult({ content, isStreaming, selectedIdeas, onToggleI
     return (
         <div className="space-y-3">
             <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700">Test Ideas</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Test Ideas</h3>
                 <div className="flex gap-2">
                     {selectedIdeas.size > 0 && (
-                        <span className="text-xs text-gray-500">{selectedIdeas.size} selected</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{selectedIdeas.size} selected</span>
                     )}
                     <button
                         onClick={handleCopy}
-                        className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200"
+                        className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                     >
                         Copy
                     </button>
@@ -62,7 +62,7 @@ export function TestIdeasResult({ content, isStreaming, selectedIdeas, onToggleI
 
             {sections.length > 0 ? sections.map((section) => (
                 <div key={section.category}>
-                    <h4 className="mb-1 text-xs font-semibold uppercase text-gray-500">
+                    <h4 className="mb-1 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
                         {section.category}
                     </h4>
                     <ul className="space-y-1">
@@ -93,7 +93,7 @@ export function TestIdeasResult({ content, isStreaming, selectedIdeas, onToggleI
                                         type="checkbox"
                                         checked={selectedIdeas.has(idx)}
                                         onChange={() => onToggleIdea(idx)}
-                                        className="mt-1 rounded border-gray-300"
+                                        className="mt-1 rounded border-gray-300 dark:border-gray-600"
                                     />
                                     {editingIndex === idx ? (
                                         <input
@@ -101,12 +101,12 @@ export function TestIdeasResult({ content, isStreaming, selectedIdeas, onToggleI
                                             onChange={(e) => setEditText(e.target.value)}
                                             onBlur={handleEditSave}
                                             onKeyDown={(e) => e.key === 'Enter' && handleEditSave()}
-                                            className="flex-1 rounded border border-gray-300 px-1 text-sm"
+                                            className="flex-1 rounded border border-gray-300 px-1 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
                                             autoFocus
                                         />
                                     ) : (
                                         <span
-                                            className="flex-1 cursor-pointer text-gray-700 hover:text-gray-900"
+                                            className="flex-1 cursor-pointer text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
                                             onDoubleClick={() => handleEdit(idx, idea)}
                                         >
                                             {idea}
@@ -118,12 +118,12 @@ export function TestIdeasResult({ content, isStreaming, selectedIdeas, onToggleI
                     </ul>
                 </div>
             )) : content && (
-                <div className="whitespace-pre-wrap text-sm text-gray-700">{content}</div>
+                <div className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{content}</div>
             )}
 
             {isStreaming && (
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+                <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600 dark:border-gray-600 dark:border-t-indigo-400" />
                     Streaming...
                 </div>
             )}

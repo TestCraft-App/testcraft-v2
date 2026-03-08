@@ -75,7 +75,7 @@ All AI calls use SSE streaming — results appear token by token as the AI gener
 | Extension framework | WXT 0.20.18 |
 | UI | React 19 + TypeScript |
 | Bundler | Vite (via WXT) |
-| Styling | Tailwind CSS v3 + PostCSS |
+| Styling | Tailwind CSS v3 + PostCSS (dark mode via `class` strategy) |
 | State management | Zustand 5 |
 | Accessibility engine | axe-core (bundled, runs locally) |
 | Testing | Vitest 4 + React Testing Library + jsdom |
@@ -103,7 +103,7 @@ testcraft-v2/
 │   │   ├── IdeasTab.tsx          # Pick element, generate ideas, see results inline, automate selected
 │   │   ├── CodeTab.tsx           # Pick element, automate tests, see code inline, pending automation
 │   │   ├── AccessibilityTab.tsx  # Page-wide a11y scan trigger + results
-│   │   ├── SettingsTab.tsx       # Provider, model, framework, language, POM settings
+│   │   ├── SettingsTab.tsx       # Settings UI (3 card sections, theme toggle, dark mode)
 │   │   ├── ElementPreview.tsx    # Picked element display (tag, text, HTML, screenshot)
 │   │   ├── GenerationHistory.tsx # ◀ Gen 3 of 5 ▶ navigation + editable element labels
 │   │   ├── PageOverview.tsx      # Scanned elements grouped by category (reserved)
@@ -156,7 +156,7 @@ testcraft-v2/
 │
 ├── wxt.config.ts                 # WXT configuration (manifest, permissions)
 ├── vitest.config.ts              # Vitest configuration (jsdom, setup file)
-├── tailwind.config.ts            # Tailwind content paths
+├── tailwind.config.ts            # Tailwind config (content paths, darkMode: 'class')
 ├── postcss.config.cjs            # PostCSS plugins (Tailwind + Autoprefixer)
 ├── tsconfig.json                 # TypeScript config (extends WXT-generated)
 ├── package.json
@@ -200,7 +200,7 @@ To load manually:
 ### Test
 
 ```bash
-npm test              # Run all 194 tests (unit + component + integration)
+npm test              # Run all 200 tests (unit + component + integration)
 npm run test:watch    # Watch mode during development
 npm run test:coverage # Coverage report
 ```
@@ -221,6 +221,14 @@ Chrome APIs are mocked globally via `src/test/chrome-mock.ts`. The mock provides
 
 ## Configuration (Settings Tab)
 
+The Settings tab is organized into three card sections with icons:
+
+**AI Configuration** — Provider, API key (with helper text), and model selection.
+
+**Test Configuration** — Framework, language, and Page Object Model toggle switch.
+
+**Preferences** — Theme selector (Light / Dark / System) as a segmented control.
+
 | Setting | Options | Default |
 |---------|---------|---------|
 | AI Provider | OpenAI, Anthropic, Google | OpenAI |
@@ -228,11 +236,16 @@ Chrome APIs are mocked globally via `src/test/chrome-mock.ts`. The mock provides
 | Model | Provider-specific list | gpt-4.1 / claude-sonnet-4 / gemini-2.5-flash |
 | Test Framework | Playwright, Cypress, Selenium | Playwright |
 | Language | JS, TS, Java, C#, Python | TypeScript |
-| Use POM | Checkbox | Off |
+| Use POM | Toggle switch | Off |
+| Theme | Light, Dark, System | System |
 
 Language options are gated by framework: Cypress only supports JavaScript and TypeScript.
 
 Settings persist in `chrome.storage.local` and survive browser restarts.
+
+### Dark Mode
+
+TestCraft supports full dark mode across all components. Tailwind's `darkMode: 'class'` strategy is used — `App.tsx` applies the `dark` class to `<html>` based on the `theme` setting. When set to "System", a `matchMedia('prefers-color-scheme: dark')` listener dynamically toggles the class to follow the OS preference. All components use Tailwind `dark:` variants for their color values.
 
 ## Data Flow
 
@@ -276,7 +289,7 @@ Ship a working v2 that's better than v1 in every way.
 | 1.7 | Accessibility check (axe-core + AI explain & fix) | Done |
 | 1.8 | Polish, error boundary, E2E fixture page | Done |
 
-**194 tests across 24 files. Build: ~844 KB (includes axe-core bundled in content script).**
+**200 tests across 24 files. Build: ~844 KB (includes axe-core bundled in content script).**
 
 ### Phase 2 — Workflow Features
 
@@ -323,4 +336,4 @@ This is a full rewrite. The v1 extension (`test-craft-app-v1/`) is vanilla JS wi
 - Multi-provider support (v1 was OpenAI-only)
 - axe-core for deterministic accessibility checks (v1 was AI-only)
 - TypeScript, React, Zustand, Tailwind, Vitest
-- 194 tests covering all features
+- 200 tests covering all features

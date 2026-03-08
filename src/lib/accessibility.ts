@@ -44,8 +44,8 @@ export function groupByImpact(violations: A11yViolation[]): Record<string, A11yV
 }
 
 export const impactLabels: Record<string, { label: string; color: string }> = {
-    critical: { label: 'Critical', color: 'text-red-700 bg-red-50 border-red-200' },
-    serious: { label: 'Serious', color: 'text-orange-700 bg-orange-50 border-orange-200' },
-    moderate: { label: 'Moderate', color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
-    minor: { label: 'Minor', color: 'text-blue-700 bg-blue-50 border-blue-200' },
+    critical: { label: 'Critical', color: 'text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-950 dark:border-red-800' },
+    serious: { label: 'Serious', color: 'text-orange-700 bg-orange-50 border-orange-200 dark:text-orange-400 dark:bg-orange-950 dark:border-orange-800' },
+    moderate: { label: 'Moderate', color: 'text-yellow-700 bg-yellow-50 border-yellow-200 dark:text-yellow-400 dark:bg-yellow-950 dark:border-yellow-800' },
+    minor: { label: 'Minor', color: 'text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950 dark:border-blue-800' },
 };

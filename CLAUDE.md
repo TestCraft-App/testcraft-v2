@@ -101,3 +101,37 @@ Each feature tab maintains up to 10 generation entries. `GenerationHistory.tsx` 
 - **`streamingIndex`**: locks which entry receives streamed chunks — never use `currentIndex` for appending content
 - **`pendingAutomation`**: App.tsx state for Ideas → Code cross-tab flow; CodeTab consumes via useEffect
 - **`deriveElementLabel`** (`element-label.ts`): derives labels from element metadata (textContent > aria-label > placeholder > title > name > tag fallback)
+
+## Development Workflow
+
+### Worktree Sessions
+
+Each Claude Code session runs via `--worktree`, giving it an isolated branch and working directory. Always run `npm install` in the worktree before running tests or builds (the worktree gets a fresh copy without `node_modules`).
+
+### End-of-Session Flow
+
+Before finishing a session, always:
+
+1. `npm test` — all tests must pass
+2. `npm run build` — build must succeed
+3. Commit all changes with a descriptive message
+4. `git push -u origin <branch>`
+5. `gh pr create` targeting `main` with Summary + Test plan sections
+6. Share the PR URL with the user
+
+### Conflict Resolution
+
+When a PR has conflicts because another PR was merged to `main` first:
+
+```bash
+git fetch origin main
+git rebase origin/main
+# resolve conflicts
+git rebase --continue
+git push --force-with-lease
+```
+
+- **Rebase, not merge** — keeps linear history on `main`
+- **`--force-with-lease`** — safe force push (fails if someone else pushed)
+- **`package-lock.json` conflicts** — accept `main`'s version, then re-run `npm install`
+- **Complex conflicts** — ask the user before resolving

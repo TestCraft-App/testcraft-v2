@@ -60,8 +60,8 @@ export function IdeasTab({ onAutomateSelected }: IdeasTabProps) {
                     onClick={handlePickElement}
                     className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                         isPicking
-                            ? 'bg-red-50 text-red-600 border border-red-200'
-                            : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            ? 'bg-red-50 text-red-600 border border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800'
+                            : 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600'
                     }`}
                 >
                     {isPicking ? 'Cancel Picking' : 'Pick Element'}
@@ -71,8 +71,8 @@ export function IdeasTab({ onAutomateSelected }: IdeasTabProps) {
                     onClick={handleGenerateIdeas}
                     className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                         hasElement && !store.isStreaming
-                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            : 'bg-gray-100 text-gray-400'
+                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
+                            : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                     }`}
                 >
                     Generate Ideas
@@ -92,15 +92,15 @@ export function IdeasTab({ onAutomateSelected }: IdeasTabProps) {
             )}
 
             {store.error && (
-                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">
                     <p className="font-medium">Error</p>
                     <p>{store.error}</p>
                 </div>
             )}
 
             {isCurrentStreaming && !hasResults && (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600 dark:border-gray-600 dark:border-t-indigo-400" />
                     Generating...
                 </div>
             )}
@@ -117,7 +117,7 @@ export function IdeasTab({ onAutomateSelected }: IdeasTabProps) {
             {selectedCount > 0 && !isCurrentStreaming && (
                 <button
                     onClick={handleAutomateSelected}
-                    className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                    className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
                 >
                     Automate Selected ({selectedCount})
                 </button>
