@@ -1,13 +1,36 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { stripCodeFences } from '../lib/prompt-builder';
+import hljs from 'highlight.js/lib/core';
+import javascript from 'highlight.js/lib/languages/javascript';
+import typescript from 'highlight.js/lib/languages/typescript';
+import java from 'highlight.js/lib/languages/java';
+import csharp from 'highlight.js/lib/languages/csharp';
+import python from 'highlight.js/lib/languages/python';
+import 'highlight.js/styles/atom-one-dark.css';
+import type { Language } from '../lib/ai-provider';
+
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('typescript', typescript);
+hljs.registerLanguage('java', java);
+hljs.registerLanguage('csharp', csharp);
+hljs.registerLanguage('python', python);
 
 export interface CodeResultProps {
     content: string;
     isStreaming: boolean;
+    language: Language;
 }
 
-export function CodeResult({ content, isStreaming }: CodeResultProps) {
+export function CodeResult({ content, isStreaming, language }: CodeResultProps) {
     const cleanCode = useMemo(() => stripCodeFences(content), [content]);
+    const codeRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        if (codeRef.current && cleanCode) {
+            codeRef.current.removeAttribute('data-highlighted');
+            hljs.highlightElement(codeRef.current);
+        }
+    }, [cleanCode, language]);
 
     const handleCopy = () => {
         navigator.clipboard.writeText(cleanCode);
@@ -26,7 +49,9 @@ export function CodeResult({ content, isStreaming }: CodeResultProps) {
             </div>
 
             <pre className="max-h-[60vh] overflow-auto rounded-lg bg-gray-900 p-3 text-xs text-gray-100">
-                <code>{cleanCode || content}</code>
+                <code ref={codeRef} className={`language-${language}`}>
+                    {cleanCode || content}
+                </code>
             </pre>
 
             {isStreaming && (
