@@ -17,6 +17,11 @@ export function App() {
         element: PickedElement;
     } | null>(null);
     const theme = useSettingsStore((s) => s.theme);
+    const loadFromStorage = useSettingsStore((s) => s.loadFromStorage);
+
+    useEffect(() => {
+        loadFromStorage();
+    }, [loadFromStorage]);
 
     useEffect(() => {
         const root = document.documentElement;
