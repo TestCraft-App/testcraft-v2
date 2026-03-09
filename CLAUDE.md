@@ -129,6 +129,21 @@ Before finishing a session, always:
 5. `gh pr create` targeting `main` with Summary + Test plan sections
 6. Share the PR URL with the user
 
+## Security Rules
+
+**Before merging any PR, verify ALL of the following:**
+
+1. **No secrets in code** — Never commit API keys, tokens, passwords, or credentials. Check for hardcoded strings starting with `sk-`, `api-`, `key-`, bearer tokens, or anything that looks like a secret. `.env` files must stay gitignored.
+2. **No secrets in URLs** — Don't put API keys or tokens in URL query strings (except Google Gemini API which requires it by design).
+3. **No `eval()`, `Function()`, or `new Function()`** — No dynamic code execution.
+4. **No `innerHTML` or `dangerouslySetInnerHTML`** — Use React's JSX rendering. If raw HTML is absolutely needed, sanitize with DOMPurify first.
+5. **No unvalidated user input in API calls** — Sanitize/validate before sending to external services.
+6. **HTTPS only** — All external API endpoints must use `https://`.
+7. **Error messages must not leak internals** — Don't expose stack traces, file paths, or secrets in error messages shown to users or returned from APIs.
+8. **Chrome storage** — API keys are stored in `chrome.storage.local` (plaintext). This is a known trade-off for UX. Never log or expose stored keys.
+9. **Auth tokens** — Google ID tokens are validated server-side. The extension decodes (not verifies) JWTs for display only — this is by design.
+10. **Dependencies** — Review new dependencies for known vulnerabilities before adding. Prefer well-maintained packages.
+
 ### Conflict Resolution
 
 When a PR has conflicts because another PR was merged to `main` first:
