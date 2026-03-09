@@ -206,7 +206,7 @@ To load manually:
 ### Test
 
 ```bash
-npm test              # Run all 200 tests (unit + component + integration)
+npm test              # Run all 229 tests (unit + component + integration)
 npm run test:watch    # Watch mode during development
 npm run test:coverage # Coverage report
 ```
@@ -241,7 +241,7 @@ The Settings tab is organized into four card sections with icons:
 |---------|---------|---------|
 | AI Provider | OpenAI, Anthropic, Google | OpenAI |
 | API Key | User's own key | (empty) |
-| Model | Provider-specific list | gpt-4.1 / claude-sonnet-4 / gemini-2.5-flash |
+| Model | Provider-specific list | gpt-4o-mini / claude-haiku-4-5-20251001 / gemini-2.5-flash |
 | Test Framework | Playwright, Cypress, Selenium | Playwright |
 | Language | JS, TS, Java, C#, Python | TypeScript |
 | Use POM | Toggle switch | Off |
@@ -299,7 +299,7 @@ Ship a working v2 that's better than v1 in every way.
 
 | 1.9 | Free tier with Google OAuth (10/day gpt-4o-mini, auth store, proxy integration) | Done |
 
-**228 tests across 25 files. Build: ~911 KB (includes axe-core bundled in content script).**
+**229 tests across 25 files. Build: ~911 KB (includes axe-core bundled in content script).**
 
 ### Phase 2 — Workflow Features
 
@@ -346,4 +346,4 @@ This is a full rewrite. The v1 extension (`test-craft-app-v1/`) is vanilla JS wi
 - Multi-provider support (v1 was OpenAI-only)
 - axe-core for deterministic accessibility checks (v1 was AI-only)
 - TypeScript, React, Zustand, Tailwind, Vitest
-- 200 tests covering all features
+- 229 tests covering all features

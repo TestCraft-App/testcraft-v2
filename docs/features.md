@@ -143,7 +143,11 @@ The scanner looks for these CSS selectors: `a[href]`, `button`, `[role="button"]
 ## 4. Settings & Multi-Provider AI
 
 **What the user sees:**
-The Settings tab is organized into **three card sections**, each with an icon header:
+The Settings tab is organized into **four card sections**, each with an icon header:
+
+**Account** (user icon)
+- "Sign in with Google" button (when not signed in) with subtext for free tier (10/day gpt-4o-mini)
+- When signed in: user avatar + name + email, usage progress bar ("N / 10 used today"), "Sign Out" button
 
 **AI Configuration** (brain icon)
 - AI Provider dropdown (OpenAI, Anthropic, Google)
@@ -170,6 +174,7 @@ The Settings tab is organized into **three card sections**, each with an icon he
 
 **Smart behaviors:**
 - Changing the provider automatically selects that provider's default model (e.g. switching to Anthropic selects `claude-haiku-4-5-20251001`, switching to OpenAI selects `gpt-4o-mini`).
+- When using the free tier (signed in, no API key), Provider and Model dropdowns are locked to OpenAI / `gpt-4o-mini`.
 - Changing to Cypress automatically limits language options to JavaScript and TypeScript. If you were on Python, it resets to JavaScript.
 - All settings persist in `chrome.storage.local` under the key `settings`.
 
@@ -204,7 +209,7 @@ All providers use **SSE (Server-Sent Events) streaming**. The `parseSSEStream()`
 - Other → "AI provider error (status)"
 
 **BYOK vs Proxy:**
-By default, `useProxy` is `false` and all calls go directly from the browser to the provider. The proxy path through `https://api.testcraft.app` exists in code but is not exposed in the Settings UI. It would be used for a future managed tier where users don't need their own API key.
+By default (when the user has an API key), all calls go directly from the browser to the provider. When the user has no API key but is signed in with Google, requests route through the TestCraft v2 API proxy for the free tier (10 generations/day using `gpt-4o-mini`). See [Section 8](#8-free-tier--google-auth) for details.
 
 **Key files:**
 - `src/lib/ai-provider.ts` — Provider factory, SSE parser, error class
@@ -350,14 +355,14 @@ This is a **two-layer** feature: deterministic scanning + optional AI analysis.
 
 CRITICAL (1)
 ┌─────────────────────────────────────────────┐
-│ Missing alt text                  [Explain] │
+│ Missing alt text                 [Analyze] │
 │ Images must have alternate text             │
 │ [wcag2a] [wcag111]                          │
 └─────────────────────────────────────────────┘
 
 SERIOUS (1)
 ┌─────────────────────────────────────────────┐
-│ Low contrast text                 [Explain] │
+│ Low contrast text                [Analyze] │
 │ Color contrast must meet minimum ratio      │
 │ [wcag2aa]                                   │
 └─────────────────────────────────────────────┘
