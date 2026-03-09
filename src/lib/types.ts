@@ -61,6 +61,21 @@ export interface ClearHighlightMessage {
     action: typeof import('./constants').ACTIONS.CLEAR_HIGHLIGHT;
 }
 
+export interface GoogleSignInMessage {
+    action: typeof import('./constants').ACTIONS.GOOGLE_SIGN_IN;
+}
+
+export interface AuthUser {
+    email: string;
+    name: string;
+    picture: string;
+}
+
+export interface GoogleSignInResponse {
+    token: string;
+    user: AuthUser;
+}
+
 export type ExtensionMessage =
     | ElementPickedMessage
     | CaptureScreenshotMessage
@@ -68,4 +83,5 @@ export type ExtensionMessage =
     | StartPickingMessage
     | StopPickingMessage
     | HighlightElementMessage
-    | ClearHighlightMessage;
+    | ClearHighlightMessage
+    | GoogleSignInMessage;

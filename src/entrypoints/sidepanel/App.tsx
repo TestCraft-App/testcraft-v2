@@ -6,6 +6,7 @@ import { CodeTab } from '../../components/CodeTab';
 import { AccessibilityTab } from '../../components/AccessibilityTab';
 import { SettingsTab } from '../../components/SettingsTab';
 import { useSettingsStore } from '../../stores/settings-store';
+import { useAuthStore } from '../../stores/auth-store';
 import type { PickedElement } from '../../lib/types';
 
 export type Tab = 'ideas' | 'code' | 'accessibility' | 'settings';
@@ -17,11 +18,13 @@ export function App() {
         element: PickedElement;
     } | null>(null);
     const theme = useSettingsStore((s) => s.theme);
-    const loadFromStorage = useSettingsStore((s) => s.loadFromStorage);
+    const loadSettings = useSettingsStore((s) => s.loadFromStorage);
+    const loadAuth = useAuthStore((s) => s.loadFromStorage);
 
     useEffect(() => {
-        loadFromStorage();
-    }, [loadFromStorage]);
+        loadSettings();
+        loadAuth();
+    }, [loadSettings, loadAuth]);
 
     useEffect(() => {
         const root = document.documentElement;

@@ -58,6 +58,10 @@ export const chromeMock = {
         setOptions: vi.fn(() => Promise.resolve()),
         setPanelBehavior: vi.fn(() => Promise.resolve()),
     },
+    identity: {
+        launchWebAuthFlow: vi.fn(() => Promise.resolve('https://test.chromiumapp.org/#id_token=mock-token')),
+        getRedirectURL: vi.fn(() => 'https://test-id.chromiumapp.org/'),
+    },
 };
 
 export function resetChromeStore() {
