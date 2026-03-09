@@ -1,3 +1,5 @@
+import { API_V2_URL } from './constants';
+
 export type AIProviderType = 'openai' | 'anthropic' | 'google';
 export type Framework = 'playwright' | 'cypress' | 'selenium';
 export type Language = 'javascript' | 'typescript' | 'java' | 'csharp' | 'python';
@@ -7,6 +9,7 @@ export interface AIProviderConfig {
     apiKey: string;
     model: string;
     useProxy?: boolean;
+    authToken?: string;
 }
 
 export interface AIProvider {
@@ -31,19 +34,49 @@ export const FRAMEWORK_LANGUAGES: Record<Framework, Language[]> = {
     selenium: ['javascript', 'typescript', 'java', 'csharp', 'python'],
 };
 
-const PROXY_URL = 'https://api.testcraft.app';
-
 const PROVIDER_ENDPOINTS: Record<AIProviderType, string> = {
     openai: 'https://api.openai.com/v1/chat/completions',
     anthropic: 'https://api.anthropic.com/v1/messages',
     google: 'https://generativelanguage.googleapis.com/v1beta/models',
 };
 
-export function createAIProvider(config: AIProviderConfig): AIProvider {
-    const { provider, apiKey, model, useProxy } = config;
+export async function validateApiKey(provider: AIProviderType, apiKey: string): Promise<boolean> {
+    if (!apiKey) return false;
 
-    if (useProxy) {
-        return createProxyProvider(model);
+    try {
+        let response: Response;
+        switch (provider) {
+            case 'openai':
+                response = await fetch('https://api.openai.com/v1/models', {
+                    headers: { Authorization: `Bearer ${apiKey}` },
+                });
+                break;
+            case 'anthropic':
+                response = await fetch('https://api.anthropic.com/v1/models', {
+                    headers: {
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true',
+                    },
+                });
+                break;
+            case 'google':
+                response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+                );
+                break;
+        }
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
+export function createAIProvider(config: AIProviderConfig): AIProvider {
+    const { provider, apiKey, model, useProxy, authToken } = config;
+
+    if (useProxy && authToken) {
+        return createProxyProvider(model, authToken);
     }
 
     switch (provider) {
@@ -148,12 +181,15 @@ function createGoogleProvider(apiKey: string, model: string): AIProvider {
     };
 }
 
-function createProxyProvider(model: string): AIProvider {
+function createProxyProvider(model: string, authToken: string): AIProvider {
     return {
         async *stream(prompt: string, systemMessage: string) {
-            const response = await fetch(`${PROXY_URL}/api/generate-ideas`, {
+            const response = await fetch(`${API_V2_URL}/api/v2/stream`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${authToken}`,
+                },
                 body: JSON.stringify({
                     prompt,
                     systemMessage,
@@ -221,12 +257,17 @@ export class AIProviderError extends Error {
         public status: number,
         public body: string,
     ) {
-        const message =
-            status === 401
-                ? 'Invalid API key. Please check your settings.'
-                : status === 429
-                  ? 'Rate limit exceeded. Please wait and try again.'
-                  : `AI provider error (${status})`;
+        let message: string;
+        if (status === 401) {
+            message = 'Invalid API key or expired session. Please check your settings.';
+        } else if (status === 429) {
+            // Try to parse a custom message from the body (e.g. daily limit from proxy)
+            let parsed: { error?: string } | null = null;
+            try { parsed = JSON.parse(body); } catch { /* ignore */ }
+            message = parsed?.error ?? 'Rate limit exceeded. Please wait and try again.';
+        } else {
+            message = `AI provider error (${status})`;
+        }
         super(message);
         this.name = 'AIProviderError';
     }

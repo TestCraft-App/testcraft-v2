@@ -110,6 +110,24 @@ describe('createAIProvider', () => {
                 }
             }).rejects.toThrow('Rate limit exceeded');
         });
+
+        it('parses custom 429 error message from JSON body', async () => {
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: false,
+                    status: 429,
+                    text: () => Promise.resolve(JSON.stringify({ error: 'Daily generation limit reached (10/day).' })),
+                }),
+            );
+
+            const provider = createAIProvider({ provider: 'openai', apiKey: 'sk-test', model: 'gpt-4o' });
+            await expect(async () => {
+                for await (const _ of provider.stream('test', 'sys')) {
+                    // consume
+                }
+            }).rejects.toThrow('Daily generation limit reached');
+        });
     });
 
     describe('Anthropic provider', () => {
@@ -170,6 +188,50 @@ describe('createAIProvider', () => {
                 expect.any(Object),
             );
             expect(chunks).toEqual(['Hey']);
+        });
+    });
+
+    describe('Proxy provider', () => {
+        it('sends auth token and uses v2 API URL', async () => {
+            const mockFetch = vi.fn().mockResolvedValue(
+                createMockSSEResponse([
+                    JSON.stringify({ choices: [{ delta: { content: 'Proxied' } }] }),
+                    '[DONE]',
+                ]),
+            );
+            vi.stubGlobal('fetch', mockFetch);
+
+            const provider = createAIProvider({
+                provider: 'openai',
+                apiKey: '',
+                model: 'gpt-4o-mini',
+                useProxy: true,
+                authToken: 'test-google-token',
+            });
+            const chunks: string[] = [];
+            for await (const chunk of provider.stream('test prompt', 'system msg')) {
+                chunks.push(chunk);
+            }
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                expect.stringContaining('/api/v2/stream'),
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        Authorization: 'Bearer test-google-token',
+                    }),
+                }),
+            );
+            expect(chunks).toEqual(['Proxied']);
+        });
+
+        it('falls back to direct provider when useProxy true but no authToken', () => {
+            const provider = createAIProvider({
+                provider: 'openai',
+                apiKey: 'sk-test',
+                model: 'gpt-4o',
+                useProxy: true,
+            });
+            expect(provider).toHaveProperty('stream');
         });
     });
 

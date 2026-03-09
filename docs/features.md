@@ -2,7 +2,7 @@
 
 This document describes every feature in TestCraft v2, what it does from a user perspective, how it works internally, and where the code lives.
 
-Last updated: Settings tab redesign (card sections, dark mode, theme toggle)
+Last updated: Free tier with Google OAuth (Account section, auth store, proxy integration)
 
 ---
 
@@ -15,7 +15,8 @@ Last updated: Settings tab redesign (card sections, dark mode, theme toggle)
 5. [Test Idea Generation](#5-test-idea-generation)
 6. [Test Code Generation](#6-test-code-generation)
 7. [Accessibility Check (A11y Tab)](#7-accessibility-check-a11y-tab)
-8. [Error Handling](#8-error-handling)
+8. [Free Tier & Google Auth](#8-free-tier--google-auth)
+9. [Error Handling](#9-error-handling)
 
 ---
 
@@ -429,7 +430,54 @@ axe-core is bundled into the content script (~500KB). It runs deterministically 
 
 ---
 
-## 8. Error Handling
+## 8. Free Tier & Google Auth
+
+### What the user sees
+
+**Settings tab → Account section** (at the top, before AI Configuration):
+
+- **Not signed in**: "Sign in with Google" button with subtext "Sign in for free AI features (10/day with gpt-4o-mini)"
+- **Signed in**: User avatar + name + email, usage progress bar ("5 / 10 used today"), "Sign Out" button
+- **Free tier active** (signed in, no API key): Provider and Model dropdowns are disabled. Model shows "gpt-4o-mini (free tier)". API key field shows hint "Add your own key for unlimited usage with any model."
+
+### How it works
+
+**Auth flow:**
+1. User clicks "Sign in with Google"
+2. Auth store sends `GOOGLE_SIGN_IN` message to background script
+3. Background builds a Google OAuth URL (`response_type=id_token`, `scope=openid email profile`)
+4. Calls `chrome.identity.launchWebAuthFlow({ interactive: true })`
+5. Google redirects back with `#id_token=...` in the URL hash
+6. Background decodes JWT payload (no verification — the API server verifies)
+7. Returns `{ token, user: { email, name, picture } }` to auth store
+8. Auth store persists to `chrome.storage.local` under `STORAGE_KEYS.AUTH`
+9. Auth store fetches usage count from `GET /api/v2/auth/me`
+
+**Generation mode auto-detection** (in `useAIGenerate`):
+- Has API key → direct provider (any provider/model, current behavior)
+- No API key + signed in → proxy provider (gpt-4o-mini, v2 API with Bearer token)
+- Neither → error: "Sign in with Google or add an API key in Settings to generate."
+
+**Token expiration**: Google ID tokens expire after 1 hour. On 401 from API → auth store clears token, user sees sign-in button. Re-sign-in is seamless if still logged into Google.
+
+**Usage tracking**: After successful proxy generation, local count is optimistically incremented. Full count is refreshed from server on sign-in and page load.
+
+### Where the code lives
+
+| File | What it does |
+|------|-------------|
+| `src/stores/auth-store.ts` | Zustand store: user, token, dailyUsage, signIn/signOut/fetchUsage/refreshUsage |
+| `src/stores/auth-store.test.ts` | 17 tests for auth store |
+| `src/entrypoints/background.ts` | Handles `GOOGLE_SIGN_IN`: builds OAuth URL, launches auth flow, parses JWT |
+| `src/components/SettingsTab.tsx` | Account section UI (sign-in/out, avatar, usage bar, model locking) |
+| `src/hooks/useAIGenerate.ts` | Auth-aware generation: auto-determines proxy mode, handles 401 |
+| `src/lib/ai-provider.ts` | `createProxyProvider(model, authToken)` — sends Bearer token to v2 API |
+| `src/lib/constants.ts` | `API_V2_URL`, `FREE_TIER_MODEL`, `DAILY_LIMIT`, `GOOGLE_SIGN_IN` action |
+| `src/lib/types.ts` | `GoogleSignInMessage`, `AuthUser`, `GoogleSignInResponse` types |
+
+---
+
+## 9. Error Handling
 
 **App-level error boundary:**
 The entire side panel app is wrapped in `<ErrorBoundary>`. If any React component throws during rendering, the user sees:
@@ -468,6 +516,7 @@ All state is managed via Zustand stores. Here's what each store holds:
 | `useIdeasStore` | entries[] (GenerationEntry with selectedIdeas), currentIndex, isStreaming, error | No — in-memory, keeps up to 10 generations |
 | `useCodeStore` | entries[] (GenerationEntry), currentIndex, isStreaming, error | No — in-memory, keeps up to 10 generations |
 | `useAccessibilityStore` | violations, explanations, isScanning, error | No — persists across tab switches within a session, resets on new scan |
+| `useAuthStore` | user, token, dailyUsage, isSigningIn | Yes — token + user synced to `chrome.storage.local` under `auth` key |
 
 ---
 
@@ -485,3 +534,4 @@ Communication between the side panel, background script, and content script uses
 | `clear-highlight` | Side panel → Content script | Remove highlight |
 | `run-axe` | Side panel → Content script | Run axe-core accessibility scan |
 | `capture-screenshot` | Side panel → Background | Capture + crop element screenshot |
+| `google-sign-in` | Side panel → Background | Launch Google OAuth flow, return token + user info |

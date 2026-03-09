@@ -59,15 +59,25 @@ src/
 | `code-store` | Code generation history |
 | `accessibility-store` | A11y violations, explanations, scan state |
 | `settings-store` | Framework, language, POM, AI provider/model/key |
+| `auth-store` | Google OAuth user, token, daily usage, sign-in/out |
 | `page-store` | Page metadata (reserved for future use) |
 
 `ideas-store` and `code-store` are created via `generation-store-factory.ts` — shared factory with 10-entry cap, navigation, streaming state, and `streamingIndex` to prevent content mixing during generation.
 
 ### AI Integration
 
-- `src/lib/ai-provider.ts` — Multi-provider SSE streaming (OpenAI, Anthropic, Google)
+- `src/lib/ai-provider.ts` — Multi-provider SSE streaming (OpenAI, Anthropic, Google, proxy)
 - `src/lib/prompt-builder.ts` — Prompt builders for ideas, automation, accessibility
-- `src/hooks/useAIGenerate.ts` — Parameterized hook accepting store actions (not coupled to a specific store)
+- `src/hooks/useAIGenerate.ts` — Parameterized hook; auto-determines direct vs proxy mode based on API key + auth state
+
+### Free Tier (Google OAuth)
+
+- Users can sign in with Google for 10 free generations/day using `gpt-4o-mini` via the v2 API proxy
+- `src/stores/auth-store.ts` — Google OAuth state: sign-in via `chrome.identity.launchWebAuthFlow()`, token persistence, usage tracking
+- `src/entrypoints/background.ts` — Handles `GOOGLE_SIGN_IN` action: builds OAuth URL, launches auth flow, parses JWT
+- Generation mode auto-determined in `useAIGenerate`: has API key → direct, no key + signed in → proxy, neither → error
+- Settings tab shows Account section (sign-in/out, usage bar), model locked to `gpt-4o-mini` for free tier
+- v2 API proxy at `API_V2_URL` (in `constants.ts`) validates tokens, tracks usage in Firestore, enforces daily limits
 
 ### Generation History
 
@@ -81,7 +91,7 @@ Each feature tab maintains up to 10 generation entries. `GenerationHistory.tsx` 
 
 ### Testing
 
-- **198 tests** across 24 files, all passing
+- **228 tests** across 25 files, all passing
 - Tests co-located with components (`*.test.tsx` / `*.test.ts`)
 - Chrome APIs mocked in `src/test/chrome-mock.ts` with `resetChromeStore()` / `setChromeStoreData()`
 - `navigator.clipboard` mock: use `Object.defineProperty` (read-only in jsdom)

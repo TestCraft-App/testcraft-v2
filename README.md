@@ -39,9 +39,15 @@ The extension calls AI provider APIs **directly from the browser**. No backend, 
 
 You enter your API key in Settings. Requests go directly from the side panel to the provider. Your key stays in `chrome.storage.local` and never leaves your browser.
 
-**Managed Proxy (not yet exposed in UI)**
+**Free Tier (Google Sign-In)**
 
-A `useProxy` flag exists in the settings store. When enabled, requests route through the TestCraft Flask API at `https://api.testcraft.app`. This path exists in code but the proxy API endpoints would need to be updated to accept the new v2 prompt format. This is intended for a future managed/freemium tier.
+No API key? No problem. Sign in with Google in the Settings tab to get **10 free AI generations per day** using `gpt-4o-mini`. Requests route through the TestCraft v2 API proxy, which validates your Google OAuth token and tracks daily usage in Firestore.
+
+- Sign in/out from the **Account** section at the top of Settings
+- Usage bar shows `N / 10 used today`
+- Model dropdown locks to `gpt-4o-mini` while on free tier
+- Add your own API key anytime to unlock all providers and models with no limits
+- Token expires after 1 hour — re-sign-in is seamless if still logged into Google
 
 ### Accessibility Checks (A11y Tab)
 
@@ -221,9 +227,11 @@ Chrome APIs are mocked globally via `src/test/chrome-mock.ts`. The mock provides
 
 ## Configuration (Settings Tab)
 
-The Settings tab is organized into three card sections with icons:
+The Settings tab is organized into four card sections with icons:
 
-**AI Configuration** — Provider, API key (with helper text), and model selection.
+**Account** — Sign in with Google for free AI features. Shows user avatar, name, email, usage bar ("N / 10 used today"), and Sign Out button when signed in.
+
+**AI Configuration** — Provider, API key (with helper text), and model selection. Provider and model dropdowns lock when using free tier (no API key + signed in).
 
 **Test Configuration** — Framework, language, and Page Object Model toggle switch.
 
@@ -289,7 +297,9 @@ Ship a working v2 that's better than v1 in every way.
 | 1.7 | Accessibility check (axe-core + AI explain & fix) | Done |
 | 1.8 | Polish, error boundary, E2E fixture page | Done |
 
-**200 tests across 24 files. Build: ~844 KB (includes axe-core bundled in content script).**
+| 1.9 | Free tier with Google OAuth (10/day gpt-4o-mini, auth store, proxy integration) | Done |
+
+**228 tests across 25 files. Build: ~911 KB (includes axe-core bundled in content script).**
 
 ### Phase 2 — Workflow Features
 
@@ -316,7 +326,7 @@ What makes teams pay.
 
 | Tier | What's included |
 |------|-----------------|
-| Free | Page scanner, element picker, 20 AI generations/day (proxy), unlimited BYOK, axe-core a11y, 5-step flow recording |
+| Free | Page scanner, element picker, 10 AI generations/day (Google sign-in, gpt-4o-mini), unlimited BYOK, axe-core a11y, 5-step flow recording |
 | Premium ($9-15/mo) | Unlimited proxy AI, full flow recording, exploratory sessions, visual snapshots, workspaces, custom templates, GitHub integration |
 | Team (TBD) | Shared workspaces, shared templates, admin controls, usage analytics |
 
