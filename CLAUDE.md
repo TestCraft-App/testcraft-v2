@@ -91,7 +91,7 @@ Each feature tab maintains up to 10 generation entries. `GenerationHistory.tsx` 
 
 ### Testing
 
-- **228 tests** across 25 files, all passing
+- **229 tests** across 25 files, all passing
 - Tests co-located with components (`*.test.tsx` / `*.test.ts`)
 - Chrome APIs mocked in `src/test/chrome-mock.ts` with `resetChromeStore()` / `setChromeStoreData()`
 - `navigator.clipboard` mock: use `Object.defineProperty` (read-only in jsdom)
