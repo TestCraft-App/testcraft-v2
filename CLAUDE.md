@@ -115,9 +115,19 @@ Each feature tab maintains up to 10 generation entries. `GenerationHistory.tsx` 
 
 ## Development Workflow
 
-### Worktree Sessions
+### Starting a Session
 
-Each Claude Code session runs via `--worktree`, giving it an isolated branch and working directory. Always run `npm install` in the worktree before running tests or builds (the worktree gets a fresh copy without `node_modules`).
+Every session must start from a clean branch off `main`:
+
+```bash
+cd testcraft-v2
+git checkout main && git pull origin main
+git checkout -b <branch-name>    # e.g. feature/selector-suggestions, docs/update-roadmap
+```
+
+If running via `--worktree`, the worktree creates an isolated branch automatically. Run `npm install` in the worktree before tests or builds (fresh copy without `node_modules`).
+
+If running from the parent `extension/` folder (not a git repo), always `cd` into `testcraft-v2/` first and create the branch manually as shown above.
 
 ### End-of-Session Flow
 
