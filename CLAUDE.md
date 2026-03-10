@@ -58,7 +58,7 @@ src/
 | `ideas-store` | Ideas generation history + idea selection |
 | `code-store` | Code generation history |
 | `accessibility-store` | A11y violations, explanations, scan state |
-| `settings-store` | Framework, language, POM, AI provider/model/key |
+| `settings-store` | Framework, language, POM, AI provider/model/key, prompt context |
 | `auth-store` | Google OAuth user, token, daily usage, sign-in/out |
 | `page-store` | Page metadata (reserved for future use) |
 
@@ -67,7 +67,8 @@ src/
 ### AI Integration
 
 - `src/lib/ai-provider.ts` — Multi-provider SSE streaming (OpenAI, Anthropic, Google, proxy)
-- `src/lib/prompt-builder.ts` — Prompt builders for ideas, automation, accessibility
+- `src/lib/prompt-builder.ts` — Prompt builders for ideas, automation, accessibility; all accept optional `context` param
+- `src/components/ContextInput.tsx` — Collapsible "Additional Context" textarea (shared across Ideas, Code, A11y tabs); stored as `promptContext` in settings store
 - `src/hooks/useAIGenerate.ts` — Parameterized hook; auto-determines direct vs proxy mode based on API key + auth state
 
 ### Free Tier (Google OAuth)
@@ -91,7 +92,7 @@ Each feature tab maintains up to 10 generation entries. `GenerationHistory.tsx` 
 
 ### Testing
 
-- **229 tests** across 25 files, all passing
+- **248 tests** across 26 files, all passing
 - Tests co-located with components (`*.test.tsx` / `*.test.ts`)
 - Chrome APIs mocked in `src/test/chrome-mock.ts` with `resetChromeStore()` / `setChromeStoreData()`
 - `navigator.clipboard` mock: use `Object.defineProperty` (read-only in jsdom)
@@ -124,10 +125,15 @@ Before finishing a session, always:
 
 1. `npm test` — all tests must pass
 2. `npm run build` — build must succeed
-3. Commit all changes with a descriptive message
-4. `git push -u origin <branch>`
-5. `gh pr create` targeting `main` with Summary + Test plan sections
-6. Share the PR URL with the user
+3. **Update documentation** (mandatory — include in the same commit):
+   - `README.md` — update Roadmap table (stage status), test count, project structure if new files added
+   - `docs/features.md` — add/update feature section for any new or changed feature, update ToC, update "Last updated" line
+   - `CLAUDE.md` — update test count, store descriptions, architecture notes if relevant
+   - Auto-memory (`MEMORY.md`) — update phase progress, test stats, key architecture notes
+4. Commit all changes (code + docs) with a descriptive message
+5. `git push -u origin <branch>`
+6. `gh pr create` targeting `main` with Summary + Test plan sections
+7. Share the PR URL with the user
 
 ## Security Rules
 
