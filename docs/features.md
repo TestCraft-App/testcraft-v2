@@ -2,7 +2,7 @@
 
 This document describes every feature in TestCraft v2, what it does from a user perspective, how it works internally, and where the code lives.
 
-Last updated: Free tier with Google OAuth (Account section, auth store, proxy integration)
+Last updated: Prompt context field (Stage 2.A)
 
 ---
 
@@ -16,7 +16,8 @@ Last updated: Free tier with Google OAuth (Account section, auth store, proxy in
 6. [Test Code Generation](#6-test-code-generation)
 7. [Accessibility Check (A11y Tab)](#7-accessibility-check-a11y-tab)
 8. [Free Tier & Google Auth](#8-free-tier--google-auth)
-9. [Error Handling](#9-error-handling)
+9. [Prompt Context Field](#9-prompt-context-field)
+10. [Error Handling](#10-error-handling)
 
 ---
 
@@ -482,7 +483,59 @@ axe-core is bundled into the content script (~500KB). It runs deterministically 
 
 ---
 
-## 9. Error Handling
+## 9. Prompt Context Field
+
+**What the user sees:**
+
+A collapsible "Additional Context" section appears on all three feature tabs (Ideas, Code, A11y), between the action buttons and the element preview / results area.
+
+1. Click "Additional Context" to expand a textarea.
+2. Type context like "banking login form" or "e-commerce checkout — focus on security".
+3. An "active" badge appears on the header when context is present.
+4. A character counter shows usage out of the 500-character limit.
+5. A clear (×) button removes the context in one click.
+6. Context is shared across all tabs — set it once, it applies everywhere.
+7. Close and reopen the popup — context persists (stored in `chrome.storage.local`).
+
+**How it improves AI output:**
+
+Without context, the AI only sees raw HTML (`<button class="btn-primary">Submit</button>`). With context like "banking login form, focus on security", the AI generates:
+- Test ideas about session timeout, credential encryption, brute-force protection
+- Automation code with security-focused assertions
+- Accessibility analysis mentioning financial compliance requirements
+
+**How it works internally:**
+
+```
+User types in ContextInput textarea
+    → Local state updates immediately (responsive typing)
+    → After 400ms debounce, updateSettings({ promptContext: value }) persists to store + chrome.storage
+    → When generating, each tab reads promptContext from settings store
+    → Tab passes context to the relevant prompt builder function
+    → Prompt builder injects "## Additional Context\n{context}" into the prompt
+    → AI receives the enriched prompt and produces context-aware output
+```
+
+**Where context is injected in prompts:**
+- `buildTestIdeasPrompt` — after element details, before category instructions
+- `buildAutomationPrompt` — after element details, before "Requirements:" section
+- `buildAccessibilityPrompt` — after affected element HTML, before output format
+
+**Special cases:**
+- Empty/whitespace-only context: no `## Additional Context` block is added (backward compatible)
+- `CodeTab` pending automation flow (Ideas → "Automate Selected" → Code): reads `promptContext` at generation time
+- `AccessibilityResult` → ViolationItem "Analyze" button: reads `promptContext` from settings store directly
+
+**Key files:**
+- `src/components/ContextInput.tsx` — Collapsible textarea component (debounced, 500-char limit, clear button)
+- `src/stores/settings-store.ts` — `promptContext: string` in Settings interface
+- `src/lib/prompt-builder.ts` — All 3 builders accept optional `context?: string` param
+
+**Tests:** `ContextInput.test.tsx` (12), `prompt-builder.test.ts` (7 new context tests)
+
+---
+
+## 10. Error Handling
 
 **App-level error boundary:**
 The entire side panel app is wrapped in `<ErrorBoundary>`. If any React component throws during rendering, the user sees:
@@ -517,7 +570,7 @@ All state is managed via Zustand stores. Here's what each store holds:
 |-------|-----------|------------|
 | `useElementStore` | `pickedElement`, `isPicking` | Yes — `pickedElement` synced to `chrome.storage.local` |
 | `usePageStore` | `inventory` (scanned elements) | No — re-scanned on panel open |
-| `useSettingsStore` | provider, apiKey, model, framework, language, usePOM, useProxy, theme | Yes — full settings object synced to `chrome.storage.local` |
+| `useSettingsStore` | provider, apiKey, model, framework, language, usePOM, useProxy, theme, promptContext | Yes — full settings object synced to `chrome.storage.local` |
 | `useIdeasStore` | entries[] (GenerationEntry with selectedIdeas), currentIndex, isStreaming, error | No — in-memory, keeps up to 10 generations |
 | `useCodeStore` | entries[] (GenerationEntry), currentIndex, isStreaming, error | No — in-memory, keeps up to 10 generations |
 | `useAccessibilityStore` | violations, explanations, isScanning, error | No — persists across tab switches within a session, resets on new scan |
