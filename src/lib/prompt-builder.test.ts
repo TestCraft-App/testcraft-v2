@@ -44,6 +44,22 @@ describe('buildTestIdeasPrompt', () => {
         expect(prompt).toContain('<button>');
         expect(prompt).toContain('"Sign In"');
     });
+
+    it('includes context when provided', () => {
+        const prompt = buildTestIdeasPrompt(mockElement, pageContext, 'banking login form');
+        expect(prompt).toContain('## Additional Context');
+        expect(prompt).toContain('banking login form');
+    });
+
+    it('omits context section when context is empty', () => {
+        const prompt = buildTestIdeasPrompt(mockElement, pageContext, '');
+        expect(prompt).not.toContain('## Additional Context');
+    });
+
+    it('omits context section when context is whitespace only', () => {
+        const prompt = buildTestIdeasPrompt(mockElement, pageContext, '   ');
+        expect(prompt).not.toContain('## Additional Context');
+    });
 });
 
 describe('buildAutomationPrompt', () => {
@@ -83,6 +99,17 @@ describe('buildAutomationPrompt', () => {
         const prompt = buildAutomationPrompt(mockElement, pageContext, 'playwright', 'typescript', false);
         expect(prompt).toContain('<button class="btn">Sign In</button>');
     });
+
+    it('includes context when provided', () => {
+        const prompt = buildAutomationPrompt(mockElement, pageContext, 'playwright', 'typescript', false, undefined, 'e-commerce checkout');
+        expect(prompt).toContain('## Additional Context');
+        expect(prompt).toContain('e-commerce checkout');
+    });
+
+    it('omits context section when context is empty', () => {
+        const prompt = buildAutomationPrompt(mockElement, pageContext, 'playwright', 'typescript', false, undefined, '');
+        expect(prompt).not.toContain('## Additional Context');
+    });
 });
 
 describe('buildAccessibilityPrompt', () => {
@@ -105,6 +132,17 @@ describe('buildAccessibilityPrompt', () => {
         expect(prompt).toContain('Priority:');
         expect(prompt).toContain('Acceptance Criteria:');
         expect(prompt).toContain('Implementation Notes:');
+    });
+
+    it('includes context when provided', () => {
+        const prompt = buildAccessibilityPrompt('Missing alt text', '<img src="photo.jpg" />', 'healthcare portal');
+        expect(prompt).toContain('## Additional Context');
+        expect(prompt).toContain('healthcare portal');
+    });
+
+    it('omits context section when context is empty', () => {
+        const prompt = buildAccessibilityPrompt('Missing alt text', '<img src="photo.jpg" />', '');
+        expect(prompt).not.toContain('## Additional Context');
     });
 });
 

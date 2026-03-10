@@ -6,7 +6,9 @@ export interface PageContext {
     title: string;
 }
 
-export function buildTestIdeasPrompt(element: PickedElement, pageContext: PageContext): string {
+export function buildTestIdeasPrompt(element: PickedElement, pageContext: PageContext, context?: string): string {
+    const contextBlock = context?.trim() ? `\n\n## Additional Context\n${context.trim()}\n` : '';
+
     return `Generate test ideas for the following UI element on the page "${pageContext.title}" (${pageContext.url}).
 
 Element HTML:
@@ -17,7 +19,7 @@ ${element.outerHTML}
 Element details:
 - Tag: <${element.tagName}>
 - Text content: "${element.textContent}"
-- Attributes: ${JSON.stringify(element.attributes)}
+- Attributes: ${JSON.stringify(element.attributes)}${contextBlock}
 
 Generate comprehensive test ideas organized into these categories: Positive Tests, Negative Tests, Boundary Tests, Accessibility Tests, and Visual/UX Tests.
 
@@ -54,8 +56,10 @@ export function buildAutomationPrompt(
     language: Language,
     usePOM: boolean,
     selectedIdeas?: string[],
+    context?: string,
 ): string {
     const frameworkInfo = getFrameworkInfo(framework, language);
+    const contextBlock = context?.trim() ? `\n\n## Additional Context\n${context.trim()}\n` : '';
 
     let prompt = `Generate ${frameworkInfo.name} test automation code in ${language} for the following UI element on "${pageContext.title}" (${pageContext.url}).
 
@@ -67,7 +71,7 @@ ${element.outerHTML}
 Element details:
 - Tag: <${element.tagName}>
 - Text content: "${element.textContent}"
-- Attributes: ${JSON.stringify(element.attributes)}
+- Attributes: ${JSON.stringify(element.attributes)}${contextBlock}
 
 Requirements:
 - Use ${frameworkInfo.name} with ${frameworkInfo.testRunner}
@@ -94,7 +98,10 @@ export const AUTOMATION_SYSTEM_MESSAGE = `You are an expert test automation engi
 export function buildAccessibilityPrompt(
     violation: string,
     elementHtml: string,
+    context?: string,
 ): string {
+    const contextBlock = context?.trim() ? `\n\n## Additional Context\n${context.trim()}\n` : '';
+
     return `Analyze the following WCAG accessibility violation and produce a structured report.
 
 Violation:
@@ -103,7 +110,7 @@ ${violation}
 Affected element HTML:
 \`\`\`html
 ${elementHtml}
-\`\`\`
+\`\`\`${contextBlock}
 
 You MUST use exactly this output format (plain text, no markdown):
 

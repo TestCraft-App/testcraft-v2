@@ -10,6 +10,7 @@ import { useCodeStore } from '../stores/code-store';
 import { useAIGenerate } from '../hooks/useAIGenerate';
 import { useElementPicker } from '../hooks/useElementPicker';
 import { ElementPreview } from './ElementPreview';
+import { ContextInput } from './ContextInput';
 import { GenerationHistory } from './GenerationHistory';
 import { CodeResult } from './CodeResult';
 import type { PickedElement } from '../lib/types';
@@ -26,7 +27,7 @@ interface CodeTabProps {
 
 export function CodeTab({ pendingAutomation, onClearPending }: CodeTabProps) {
     const { pickedElement, isPicking } = useElementStore();
-    const { framework, language, usePOM } = useSettingsStore();
+    const { framework, language, usePOM, promptContext } = useSettingsStore();
     const { handlePickElement } = useElementPicker();
     const store = useCodeStore();
     const pendingProcessed = useRef(false);
@@ -48,7 +49,7 @@ export function CodeTab({ pendingAutomation, onClearPending }: CodeTabProps) {
             pendingProcessed.current = true;
             const { ideas, element } = pendingAutomation;
             const pageContext = { url: element.pageUrl, title: element.pageTitle };
-            const prompt = buildAutomationPrompt(element, pageContext, framework, language, usePOM, ideas);
+            const prompt = buildAutomationPrompt(element, pageContext, framework, language, usePOM, ideas, promptContext);
             const label = deriveElementLabel(element);
             generate(prompt, AUTOMATION_SYSTEM_MESSAGE, label, element.pageUrl).then(() => {
                 onClearPending();
@@ -57,7 +58,7 @@ export function CodeTab({ pendingAutomation, onClearPending }: CodeTabProps) {
         if (!pendingAutomation) {
             pendingProcessed.current = false;
         }
-    }, [pendingAutomation, framework, language, usePOM, generate, onClearPending]);
+    }, [pendingAutomation, framework, language, usePOM, promptContext, generate, onClearPending]);
 
     const currentEntry = store.entries[store.currentIndex];
     const hasElement = pickedElement !== null;
@@ -67,7 +68,7 @@ export function CodeTab({ pendingAutomation, onClearPending }: CodeTabProps) {
     const handleAutomateTests = async () => {
         if (!pickedElement) return;
         const pageContext = { url: pickedElement.pageUrl, title: pickedElement.pageTitle };
-        const prompt = buildAutomationPrompt(pickedElement, pageContext, framework, language, usePOM);
+        const prompt = buildAutomationPrompt(pickedElement, pageContext, framework, language, usePOM, undefined, promptContext);
         const label = deriveElementLabel(pickedElement);
         await generate(prompt, AUTOMATION_SYSTEM_MESSAGE, label, pickedElement.pageUrl);
     };
@@ -97,6 +98,8 @@ export function CodeTab({ pendingAutomation, onClearPending }: CodeTabProps) {
                     Automate Tests
                 </button>
             </div>
+
+            <ContextInput />
 
             {hasElement && <ElementPreview />}
 
