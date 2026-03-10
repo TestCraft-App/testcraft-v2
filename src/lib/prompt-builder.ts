@@ -1,4 +1,5 @@
 import type { PickedElement } from './types';
+import type { DetectedFormField, TestDataSet } from './form-data';
 import type { Framework, Language } from './ai-provider';
 
 export interface PageContext {
@@ -135,6 +136,65 @@ Do not include code snippets, HTML fixes, or markdown formatting.`;
 }
 
 export const ACCESSIBILITY_SYSTEM_MESSAGE = `You are a web accessibility expert writing reports for software testers. Be concise and practical. Focus on impact, WCAG compliance, and clear direction for fixes. Do not write code.`;
+
+export function buildTestDataPrompt(fields: DetectedFormField[], pageContext: PageContext, context?: string): string {
+    const contextBlock = context?.trim() ? `\n\nAdditional context: ${context.trim()}` : '';
+
+    return `Generate realistic test datasets for a web form on "${pageContext.title}" (${pageContext.url}).
+
+Detected fields:
+${JSON.stringify(fields, null, 2)}${contextBlock}
+
+Return only valid JSON (no markdown or extra text) in this exact shape:
+{
+  "datasets": [
+    {
+      "id": "short-kebab-id",
+      "name": "Human readable name",
+      "values": {
+        "<field selector>": "<value or boolean>",
+        "<field selector>": true
+      }
+    }
+  ]
+}
+
+Rules:
+- Return exactly 3 datasets.
+- Include values for every field selector in each dataset.
+- Use booleans only for checkbox/radio fields.
+- Keep values safe for test environments (fake data only).
+- For select fields, use one of the provided options when available.`;
+}
+
+export const TEST_DATA_SYSTEM_MESSAGE = `You generate high-quality synthetic form test data for QA workflows. Output must be strict JSON only, with deterministic keys and no commentary.`;
+
+export function parseTestDataSets(text: string): TestDataSet[] {
+    const candidate = extractJsonObject(text);
+    if (!candidate) return [];
+
+    try {
+        const parsed = JSON.parse(candidate) as { datasets?: Array<{ id?: string; name?: string; values?: Record<string, string | boolean> }> };
+        if (!Array.isArray(parsed.datasets)) return [];
+
+        return parsed.datasets
+            .map((dataset, index) => ({
+                id: dataset.id?.trim() || `dataset-${index + 1}`,
+                name: dataset.name?.trim() || `Dataset ${index + 1}`,
+                values: dataset.values && typeof dataset.values === 'object' ? dataset.values : {},
+            }))
+            .filter((dataset) => Object.keys(dataset.values).length > 0);
+    } catch {
+        return [];
+    }
+}
+
+function extractJsonObject(text: string): string | null {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1 || end === -1 || end <= start) return null;
+    return text.slice(start, end + 1);
+}
 
 function getFrameworkInfo(framework: Framework, language: Language) {
     switch (framework) {

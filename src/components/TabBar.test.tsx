@@ -4,15 +4,16 @@ import { describe, it, expect, vi } from 'vitest';
 import { TabBar } from './TabBar';
 
 describe('TabBar', () => {
-    it('renders all four tabs', () => {
+    it('renders all five tabs', () => {
         render(<TabBar activeTab="ideas" onTabChange={() => {}} />);
-        expect(screen.getAllByRole('tab')).toHaveLength(4);
+        expect(screen.getAllByRole('tab')).toHaveLength(5);
     });
 
     it('renders correct tab labels', () => {
         render(<TabBar activeTab="ideas" onTabChange={() => {}} />);
         expect(screen.getByRole('tab', { name: 'Ideas' })).toBeInTheDocument();
         expect(screen.getByRole('tab', { name: 'Code' })).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: 'Data' })).toBeInTheDocument();
         expect(screen.getByRole('tab', { name: 'A11y' })).toBeInTheDocument();
         expect(screen.getByRole('tab', { name: 'Settings' })).toBeInTheDocument();
     });
@@ -30,6 +31,15 @@ describe('TabBar', () => {
 
         await user.click(screen.getByRole('tab', { name: 'Settings' }));
         expect(onTabChange).toHaveBeenCalledWith('settings');
+    });
+
+    it('calls onTabChange with data when Data tab is clicked', async () => {
+        const user = userEvent.setup();
+        const onTabChange = vi.fn();
+        render(<TabBar activeTab="ideas" onTabChange={onTabChange} />);
+
+        await user.click(screen.getByRole('tab', { name: 'Data' }));
+        expect(onTabChange).toHaveBeenCalledWith('data');
     });
 
     it('calls onTabChange with accessibility when A11y tab is clicked', async () => {

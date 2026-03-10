@@ -311,7 +311,7 @@ Smarter AI output, richer context, better workflows.
 | 2.A | Prompt context field — collapsible textarea for domain context across all AI features | Done |
 | 2.B | Selector suggestions — AI suggests best-practice selectors for picked elements | Pending |
 | 2.C | Re-generate with feedback — refine AI output with follow-up instructions | Pending |
-| 2.D | Test data generator — detect form fields, AI generates data sets, auto-fill | Pending |
+| 2.D | Test data generator — detect form fields, AI generates data sets, auto-fill | MVP Done |
 | 2.E | Exploratory testing sessions — timed sessions, auto-logging, AI reports | Pending |
 | 2.F | Flow recording — capture user interactions, AI generates test scripts | Pending |
 

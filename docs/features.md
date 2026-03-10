@@ -2,7 +2,7 @@
 
 This document describes every feature in TestCraft v2, what it does from a user perspective, how it works internally, and where the code lives.
 
-Last updated: Prompt context field (Stage 2.A)
+Last updated: Test data generator MVP (Stage 2.D)
 
 ---
 
@@ -18,13 +18,14 @@ Last updated: Prompt context field (Stage 2.A)
 8. [Free Tier & Google Auth](#8-free-tier--google-auth)
 9. [Prompt Context Field](#9-prompt-context-field)
 10. [Error Handling](#10-error-handling)
+11. [Test Data Generator (Data Tab)](#11-test-data-generator-data-tab)
 
 ---
 
 ## 1. Side Panel Shell
 
 **What the user sees:**
-A persistent side panel that opens alongside any website. It has four tabs at the top: **Ideas**, **Code**, **A11y**, and **Settings**. Clicking a tab switches the view. The panel stays open as you navigate between pages. Each feature tab (Ideas, Code) is self-contained: pick an element, generate, and see results — all in one place.
+A persistent side panel that opens alongside any website. It has five tabs at the top: **Ideas**, **Code**, **Data**, **A11y**, and **Settings**. Clicking a tab switches the view. The panel stays open as you navigate between pages. Each feature tab (Ideas, Code) is self-contained: pick an element, generate, and see results — all in one place.
 
 **How to open it:**
 - Click the TestCraft extension icon — the side panel opens automatically (configured via `chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })`).
@@ -32,7 +33,7 @@ A persistent side panel that opens alongside any website. It has four tabs at th
 
 **Internal details:**
 - The side panel is a full React app mounted at `src/entrypoints/sidepanel/`.
-- Tab state is local React state (`useState<Tab>`) in `App.tsx` — not persisted. Closing and reopening the panel resets to the Ideas tab. Tabs: `ideas`, `code`, `accessibility`, `settings`.
+- Tab state is local React state (`useState<Tab>`) in `App.tsx` — not persisted. Closing and reopening the panel resets to the Ideas tab. Tabs: `ideas`, `code`, `data`, `accessibility`, `settings`.
 - `App.tsx` also manages `pendingAutomation` state for the cross-tab "Automate Selected" flow (Ideas → Code).
 - The popup at `src/entrypoints/popup/` is intentionally minimal. Its only job is to call `chrome.sidePanel.open()` and then `window.close()`.
 - The background service worker (`src/entrypoints/background.ts`) sets `openPanelOnActionClick: true` so clicking the extension icon opens the side panel directly without showing the popup.
@@ -562,6 +563,71 @@ Clicking "Try again" resets the error state and re-renders normally.
 
 ---
 
+## 11. Test Data Generator (Data Tab)
+
+**MVP scope delivered (Phase 2.D):**
+1. Detect form fields on the active page (inputs, textareas, selects; excluding hidden inputs).
+2. Generate exactly 3 AI datasets in structured JSON for detected selectors.
+3. Let the user select one dataset from a dropdown.
+4. Auto-fill the page using selector → value mapping.
+
+**User flow:**
+1. Open **Data** tab.
+2. Click **Detect Form Fields**.
+3. Click **Generate Datasets**.
+4. Pick a dataset and click **Auto-fill Form**.
+
+**Implementation summary:**
+- Added a new side-panel tab: `data` (`TestDataTab`).
+- Added content-script actions:
+  - `detect-form-fields` → returns normalized field descriptors.
+  - `fill-form-data` → fills fields and dispatches `input` + `change` events.
+- Added form helpers (`src/lib/form-data.ts`) to keep DOM logic testable.
+- Added test-data prompt helpers in `prompt-builder.ts`:
+  - `buildTestDataPrompt(...)`
+  - `parseTestDataSets(...)`
+- Reused existing auth/provider behavior (BYOK or free-tier proxy) for generation.
+
+**Assumptions / decisions made (explicit):**
+1. Field identity is selector-based (`id` > `data-testid` > `name` > `aria-label`) for deterministic mapping.
+2. Hidden inputs are excluded from MVP detection to reduce risk of mutating framework internals/tokens.
+3. AI output contract is strict JSON with `datasets[]`, `id`, `name`, and `values` keyed by selector.
+4. MVP generates exactly **3 datasets** to keep choice simple and response sizes bounded.
+5. Auto-fill dispatches both `input` and `change` events for compatibility with controlled forms.
+6. When select value is invalid, fallback to first option instead of failing hard.
+7. Unsupported/unstable selectors are skipped silently during fill (safe-by-default behavior).
+8. Data tab uses direct one-shot generation (no generation history) to minimize MVP complexity.
+
+**Deferred to post-MVP (explicit):**
+1. Dataset history/versioning and re-use across pages/sessions.
+2. Per-field manual editing before fill.
+3. Multi-form scoping UI (choose target form when multiple forms exist).
+4. Rich field typing/constraints (min/max/date masks/regex) and validation-aware generation.
+5. Internationalization/localized data profiles.
+6. Partial fill controls (choose subset of fields to apply).
+7. Better recovery UX for malformed model JSON (repair/regenerate flow).
+8. Visual diff/confirmation before applying fill.
+
+**Known limitations:**
+- Relies on selector stability; dynamic DOM changes after detection can reduce fill success.
+- Does not infer complex widget models (custom dropdown components) beyond native controls.
+- Radio groups are treated as boolean per selected element; group-aware semantics are deferred.
+- JSON parsing is intentionally strict and may reject verbose/non-conformant model responses.
+
+**Key files:**
+- `src/components/TestDataTab.tsx`
+- `src/lib/form-data.ts`
+- `src/entrypoints/content.ts`
+- `src/lib/prompt-builder.ts`
+- `src/lib/constants.ts`
+
+**Tests:**
+- `src/lib/form-data.test.ts`
+- `src/lib/test-data-prompt.test.ts`
+- updated tab tests in `App.test.tsx` and `TabBar.test.tsx`
+
+---
+
 ## State Management Overview
 
 All state is managed via Zustand stores. Here's what each store holds:
@@ -591,5 +657,7 @@ Communication between the side panel, background script, and content script uses
 | `highlight-element` | Side panel → Content script | Highlight element by selector |
 | `clear-highlight` | Side panel → Content script | Remove highlight |
 | `run-axe` | Side panel → Content script | Run axe-core accessibility scan |
+| `detect-form-fields` | Side panel → Content script | Detect native form fields for data generation |
+| `fill-form-data` | Side panel → Content script | Fill form values by selector mapping |
 | `capture-screenshot` | Side panel → Background | Capture + crop element screenshot |
 | `google-sign-in` | Side panel → Background | Launch Google OAuth flow, return token + user info |
