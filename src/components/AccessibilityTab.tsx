@@ -2,6 +2,7 @@ import { ACTIONS } from '../lib/constants';
 import { mapAxeViolations } from '../lib/accessibility';
 import { useAccessibilityStore } from '../stores/accessibility-store';
 import { AccessibilityResult } from './AccessibilityResult';
+import { ContextInput } from './ContextInput';
 
 export function AccessibilityTab() {
     const { violations, isScanning, error, setViolations, setScanning, setError } = useAccessibilityStore();
@@ -44,6 +45,8 @@ export function AccessibilityTab() {
             >
                 {isScanning ? 'Scanning...' : 'Run Accessibility Check'}
             </button>
+
+            <ContextInput />
 
             {error && (
                 <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">

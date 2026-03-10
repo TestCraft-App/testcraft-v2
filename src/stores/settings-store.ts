@@ -14,6 +14,7 @@ export interface Settings {
     usePOM: boolean;
     useProxy: boolean;
     theme: Theme;
+    promptContext: string;
 }
 
 const defaultSettings: Settings = {
@@ -25,6 +26,7 @@ const defaultSettings: Settings = {
     usePOM: false,
     useProxy: false,
     theme: 'light',
+    promptContext: '',
 };
 
 interface SettingsState extends Settings {
@@ -79,6 +81,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
             usePOM: newState.usePOM,
             useProxy: newState.useProxy,
             theme: newState.theme,
+            promptContext: newState.promptContext,
         };
         chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: toStore });
     },

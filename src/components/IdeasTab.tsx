@@ -5,10 +5,12 @@ import {
 } from '../lib/prompt-builder';
 import { deriveElementLabel } from '../lib/element-label';
 import { useElementStore } from '../stores/element-store';
+import { useSettingsStore } from '../stores/settings-store';
 import { useIdeasStore } from '../stores/ideas-store';
 import { useAIGenerate } from '../hooks/useAIGenerate';
 import { useElementPicker } from '../hooks/useElementPicker';
 import { ElementPreview } from './ElementPreview';
+import { ContextInput } from './ContextInput';
 import { GenerationHistory } from './GenerationHistory';
 import { TestIdeasResult } from './TestIdeasResult';
 import type { PickedElement } from '../lib/types';
@@ -19,6 +21,7 @@ interface IdeasTabProps {
 
 export function IdeasTab({ onAutomateSelected }: IdeasTabProps) {
     const { pickedElement, isPicking } = useElementStore();
+    const promptContext = useSettingsStore((s) => s.promptContext);
     const { handlePickElement } = useElementPicker();
     const store = useIdeasStore();
 
@@ -42,7 +45,7 @@ export function IdeasTab({ onAutomateSelected }: IdeasTabProps) {
     const handleGenerateIdeas = async () => {
         if (!pickedElement) return;
         const pageContext = { url: pickedElement.pageUrl, title: pickedElement.pageTitle };
-        const prompt = buildTestIdeasPrompt(pickedElement, pageContext);
+        const prompt = buildTestIdeasPrompt(pickedElement, pageContext, promptContext);
         const label = deriveElementLabel(pickedElement);
         await generate(prompt, TEST_IDEAS_SYSTEM_MESSAGE, label, pickedElement.pageUrl);
     };
@@ -78,6 +81,8 @@ export function IdeasTab({ onAutomateSelected }: IdeasTabProps) {
                     Generate Ideas
                 </button>
             </div>
+
+            <ContextInput />
 
             {hasElement && <ElementPreview />}
 
