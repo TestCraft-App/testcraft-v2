@@ -131,6 +131,10 @@ If running via `--worktree`, the worktree creates an isolated branch automatical
 
 If running from the parent `extension/` folder (not a git repo), always `cd` into `testcraft-v2/` first and create the branch manually as shown above.
 
+### Build After Every Change
+
+After every code change (bug fix, feature, refactor), **always run `npm run build`** before telling the user the change is ready. The user reloads the extension from `.output/chrome-mv3/` to test — if you skip the build, they get stale code. This applies to every commit, not just end-of-session.
+
 ### End-of-Session Flow
 
 Before finishing a session, always:
