@@ -80,7 +80,7 @@ function ViolationItem({ violation }: { violation: A11yViolation }) {
         const prompt = buildAccessibilityPrompt(
             `${violation.help}: ${violation.description}`,
             elementHtml,
-            settings.promptContext,
+            settings.promptContexts.a11y,
         );
 
         const useProxy = isFreeTier(settings.apiKey, token);

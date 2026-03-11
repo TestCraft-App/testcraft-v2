@@ -43,6 +43,7 @@ describe('useAIGenerate', () => {
             useProxy: false,
             theme: 'light',
             promptContext: '',
+            promptContexts: { ideas: '', code: '', a11y: '', data: '' },
         });
         useAuthStore.setState({
             user: null,

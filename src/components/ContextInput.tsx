@@ -1,11 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSettingsStore } from '../stores/settings-store';
+import type { ContextTab } from '../stores/settings-store';
 
 const MAX_LENGTH = 500;
 const DEBOUNCE_MS = 400;
 
-export function ContextInput() {
-    const promptContext = useSettingsStore((s) => s.promptContext);
+interface ContextInputProps {
+    tabKey: ContextTab;
+}
+
+export function ContextInput({ tabKey }: ContextInputProps) {
+    const promptContext = useSettingsStore((s) => s.promptContexts[tabKey]);
     const updateSettings = useSettingsStore((s) => s.updateSettings);
     const [localValue, setLocalValue] = useState(promptContext);
     const [isExpanded, setIsExpanded] = useState(promptContext.length > 0);
@@ -19,9 +24,9 @@ export function ContextInput() {
 
     const persistValue = useCallback(
         (value: string) => {
-            updateSettings({ promptContext: value });
+            updateSettings({ promptContexts: { ...useSettingsStore.getState().promptContexts, [tabKey]: value } });
         },
-        [updateSettings],
+        [updateSettings, tabKey],
     );
 
     const handleChange = (value: string) => {

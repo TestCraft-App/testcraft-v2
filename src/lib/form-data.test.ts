@@ -62,6 +62,25 @@ describe('form-data', () => {
         expect((document.querySelector('#active') as HTMLInputElement).checked).toBe(true);
     });
 
+    it('detects fields scoped to a specific element subtree', () => {
+        document.body.innerHTML = `
+            <form id="login">
+                <input id="user" name="user" type="text" />
+                <input id="pass" name="pass" type="password" />
+            </form>
+            <form id="newsletter">
+                <input id="nl-email" name="nl-email" type="email" />
+            </form>
+        `;
+
+        const loginForm = document.getElementById('login')!;
+        const fields = detectFormFields(loginForm);
+
+        expect(fields).toHaveLength(2);
+        expect(fields[0]).toMatchObject({ selector: '#user', type: 'text' });
+        expect(fields[1]).toMatchObject({ selector: '#pass', type: 'password' });
+    });
+
     it('skips file inputs and invalid selectors without crashing', () => {
         document.body.innerHTML = `
             <input id="name" />

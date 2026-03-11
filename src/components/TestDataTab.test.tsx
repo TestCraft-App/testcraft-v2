@@ -4,9 +4,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createStreamingProvider, createErrorProvider } from '../test/ai-mock';
 import { useSettingsStore } from '../stores/settings-store';
 import { useAuthStore } from '../stores/auth-store';
+import { useElementStore } from '../stores/element-store';
 import { useTestDataStore } from '../stores/test-data-store';
 import { TestDataTab } from './TestDataTab';
 import type { DetectedFormField } from '../lib/form-data';
+import type { PickedElement } from '../lib/types';
 
 const mockCreateAIProvider = vi.hoisted(() => vi.fn());
 
@@ -20,6 +22,16 @@ const mockFields: DetectedFormField[] = [
     { selector: '#email', name: 'email', label: 'Email', type: 'email', required: true },
 ];
 
+const mockPickedElement: PickedElement = {
+    outerHTML: '<form id="login"><input name="user" /></form>',
+    tagName: 'form',
+    textContent: '',
+    attributes: { id: 'login' },
+    boundingRect: { x: 0, y: 0, width: 200, height: 100 },
+    pageUrl: 'https://example.com',
+    pageTitle: 'Example',
+};
+
 // Valid JSON response the AI would return
 const validDatasetJson = JSON.stringify({
     datasets: [
@@ -32,6 +44,7 @@ describe('TestDataTab', () => {
     beforeEach(() => {
         mockCreateAIProvider.mockReset();
         useTestDataStore.getState().reset();
+        useElementStore.setState({ pickedElement: null, isPicking: false });
 
         useSettingsStore.setState({
             provider: 'openai',
@@ -44,6 +57,7 @@ describe('TestDataTab', () => {
             useProxy: false,
             theme: 'light',
             promptContext: '',
+            promptContexts: { ideas: '', code: '', a11y: '', data: '' },
         });
         useAuthStore.setState({
             user: null,
@@ -189,6 +203,58 @@ describe('TestDataTab', () => {
         await waitFor(() => {
             expect(screen.getByText('Valid - All Fields')).toBeInTheDocument();
             expect(screen.getByText('Empty Name')).toBeInTheDocument();
+        });
+    });
+
+    it('renders Pick Element button', () => {
+        useTestDataStore.getState().setFields(mockFields);
+        render(<TestDataTab />);
+        expect(screen.getByText('Pick Element (optional)')).toBeInTheDocument();
+    });
+
+    it('shows scope indicator for entire page when no element picked', () => {
+        useTestDataStore.getState().setFields(mockFields);
+        render(<TestDataTab />);
+        expect(screen.getByText('Detecting on entire page')).toBeInTheDocument();
+    });
+
+    it('shows scope indicator with element label when element is picked', () => {
+        useTestDataStore.getState().setFields(mockFields);
+        useElementStore.setState({ pickedElement: mockPickedElement });
+        render(<TestDataTab />);
+        expect(screen.getByText(/Scope:/)).toBeInTheDocument();
+    });
+
+    it('sends scopeToPickedElement when element is picked and Detect Fields clicked', async () => {
+        useTestDataStore.getState().setFields(mockFields);
+        useElementStore.setState({ pickedElement: mockPickedElement });
+        (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>).mockResolvedValue({ fields: mockFields });
+
+        const user = userEvent.setup();
+        render(<TestDataTab />);
+        await user.click(screen.getByText('Detect Fields'));
+
+        await waitFor(() => {
+            expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(1, {
+                action: 'detect-form-fields',
+                payload: { scopeToPickedElement: true },
+            });
+        });
+    });
+
+    it('sends no payload when no element picked and Detect Fields clicked', async () => {
+        useTestDataStore.getState().setFields(mockFields);
+        (chrome.tabs.sendMessage as ReturnType<typeof vi.fn>).mockResolvedValue({ fields: [] });
+
+        const user = userEvent.setup();
+        render(<TestDataTab />);
+        await user.click(screen.getByText('Detect Fields'));
+
+        await waitFor(() => {
+            expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(1, {
+                action: 'detect-form-fields',
+                payload: undefined,
+            });
         });
     });
 });
