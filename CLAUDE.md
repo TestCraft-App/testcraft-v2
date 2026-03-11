@@ -60,6 +60,7 @@ src/
 | `accessibility-store` | A11y violations, explanations, scan state |
 | `settings-store` | Framework, language, POM, AI provider/model/key, prompt context |
 | `auth-store` | Google OAuth user, token, daily usage, sign-in/out |
+| `test-data-store` | Detected form fields, field selection, datasets, fill state |
 | `page-store` | Page metadata (reserved for future use) |
 
 `ideas-store` and `code-store` are created via `generation-store-factory.ts` — shared factory with 10-entry cap, navigation, streaming state, and `streamingIndex` to prevent content mixing during generation.
@@ -67,8 +68,8 @@ src/
 ### AI Integration
 
 - `src/lib/ai-provider.ts` — Multi-provider SSE streaming (OpenAI, Anthropic, Google, proxy)
-- `src/lib/prompt-builder.ts` — Prompt builders for ideas, automation, accessibility; all accept optional `context` param
-- `src/components/ContextInput.tsx` — Collapsible "Additional Context" textarea (shared across Ideas, Code, A11y tabs); stored as `promptContext` in settings store
+- `src/lib/prompt-builder.ts` — Prompt builders for ideas, automation, accessibility, test data; all accept optional `context` param
+- `src/components/ContextInput.tsx` — Collapsible "Additional Context" textarea (shared across Ideas, Code, A11y, Data tabs); stored as `promptContext` in settings store
 - `src/hooks/useAIGenerate.ts` — Parameterized hook; auto-determines direct vs proxy mode based on API key + auth state
 
 ### Free Tier (Google OAuth)
@@ -89,10 +90,11 @@ Each feature tab maintains up to 10 generation entries. `GenerationHistory.tsx` 
 `src/entrypoints/content.ts` handles:
 - Element picking (hover highlight, click capture, HTML extraction)
 - axe-core accessibility scanning (full page, triggered by `RUN_AXE` message)
+- Form field detection and auto-fill (`DETECT_FORM_FIELDS`, `FILL_FORM_DATA`)
 
 ### Testing
 
-- **248 tests** across 26 files, all passing
+- **259 tests** across 28 files, all passing
 - Tests co-located with components (`*.test.tsx` / `*.test.ts`)
 - Chrome APIs mocked in `src/test/chrome-mock.ts` with `resetChromeStore()` / `setChromeStoreData()`
 - `navigator.clipboard` mock: use `Object.defineProperty` (read-only in jsdom)
@@ -128,6 +130,10 @@ git checkout -b <branch-name>    # e.g. feature/selector-suggestions, docs/updat
 If running via `--worktree`, the worktree creates an isolated branch automatically. Run `npm install` in the worktree before tests or builds (fresh copy without `node_modules`).
 
 If running from the parent `extension/` folder (not a git repo), always `cd` into `testcraft-v2/` first and create the branch manually as shown above.
+
+### Build After Every Change
+
+After every code change (bug fix, feature, refactor), **always run `npm run build`** before telling the user the change is ready. The user reloads the extension from `.output/chrome-mv3/` to test — if you skip the build, they get stale code. This applies to every commit, not just end-of-session.
 
 ### End-of-Session Flow
 

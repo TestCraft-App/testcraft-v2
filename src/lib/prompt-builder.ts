@@ -1,4 +1,5 @@
 import type { PickedElement } from './types';
+import type { DetectedFormField, TestDataSet } from './form-data';
 import type { Framework, Language } from './ai-provider';
 
 export interface PageContext {
@@ -135,6 +136,85 @@ Do not include code snippets, HTML fixes, or markdown formatting.`;
 }
 
 export const ACCESSIBILITY_SYSTEM_MESSAGE = `You are a web accessibility expert writing reports for software testers. Be concise and practical. Focus on impact, WCAG compliance, and clear direction for fixes. Do not write code.`;
+
+export function buildTestDataPrompt(fields: DetectedFormField[], pageContext: PageContext, context?: string): string {
+    const contextBlock = context?.trim() ? `\n\nAdditional context provided by the tester:\n${context.trim()}` : '';
+
+    return `Analyze the following web form on "${pageContext.title}" (${pageContext.url}) and generate an optimal set of test datasets.
+
+Detected form fields:
+${JSON.stringify(fields, null, 2)}${contextBlock}
+
+## Test Data Generation Strategy
+
+Apply these test design techniques where relevant to the form's fields:
+- **Equivalence Partitioning**: identify valid and invalid equivalence classes for each field (e.g., valid email vs missing @, vs empty)
+- **Boundary Value Analysis**: test at, just below, and just above field boundaries (min/max length, numeric ranges, date limits)
+- **Negative Testing**: empty required fields, invalid formats, special characters, excessively long input
+- **Realistic Positive Scenarios**: use contextually appropriate fake data that matches the form's domain (e.g., realistic names/emails for a signup form, product data for an inventory form)
+- **State Transitions**: data combinations that trigger different application states or validation paths
+
+## Dataset Count
+
+Determine the optimal number of datasets based on form complexity and how many meaningful, distinct scenarios exist. Do not generate redundant datasets. Aim for quality over quantity.
+- Simple forms (1-3 fields): 3-6 datasets
+- Medium forms (4-8 fields): 5-10 datasets
+- Complex forms (9+ fields): 8-20 datasets
+- Never exceed 20 datasets total.
+
+## Output Format
+
+Return only valid JSON (no markdown, no code fences, no commentary) in this exact shape:
+{
+  "datasets": [
+    {
+      "id": "short-kebab-id",
+      "name": "Descriptive scenario name",
+      "values": {
+        "<field selector>": "<value or boolean>"
+      }
+    }
+  ]
+}
+
+## Rules
+
+- Each dataset name MUST clearly describe the test scenario it represents (e.g., "Valid Registration - All Required Fields", "Missing Email - Required Field Blank", "Boundary - Maximum Length Inputs"). Never use generic names like "Dataset 1" or "Test Data".
+- Include values for every provided field selector in each dataset.
+- Use booleans only for checkbox and radio fields.
+- For select fields, choose from the provided options list.
+- Keep all values safe for test environments — use only fake, synthetic data.
+- Each dataset should test a meaningfully different scenario. Avoid near-duplicate datasets.`;
+}
+
+export const TEST_DATA_SYSTEM_MESSAGE = `You are a senior QA engineer specializing in test data design. You apply systematic test design techniques (equivalence partitioning, boundary value analysis, negative testing) to generate high-quality, diverse test datasets that maximize defect detection coverage. Output must be strict JSON only — no commentary, no markdown, no code fences.`;
+
+export function parseTestDataSets(text: string): TestDataSet[] {
+    const candidate = extractJsonObject(text);
+    if (!candidate) return [];
+
+    try {
+        const parsed = JSON.parse(candidate) as { datasets?: Array<{ id?: string; name?: string; values?: Record<string, string | boolean> }> };
+        if (!Array.isArray(parsed.datasets)) return [];
+
+        return parsed.datasets
+            .map((dataset, index) => ({
+                id: dataset.id?.trim() || `dataset-${index + 1}`,
+                name: dataset.name?.trim() || `Dataset ${index + 1}`,
+                values: dataset.values && typeof dataset.values === 'object' ? dataset.values : {},
+            }))
+            .filter((dataset) => Object.keys(dataset.values).length > 0);
+    } catch {
+        return [];
+    }
+}
+
+function extractJsonObject(text: string): string | null {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1 || end === -1 || end <= start) return null;
+    return text.slice(start, end + 1);
+}
 
 function getFrameworkInfo(framework: Framework, language: Language) {
     switch (framework) {

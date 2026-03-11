@@ -2,7 +2,7 @@
 
 This document describes every feature in TestCraft v2, what it does from a user perspective, how it works internally, and where the code lives.
 
-Last updated: Prompt context field (Stage 2.A)
+Last updated: Test data generator MVP (Stage 2.D)
 
 ---
 
@@ -18,13 +18,14 @@ Last updated: Prompt context field (Stage 2.A)
 8. [Free Tier & Google Auth](#8-free-tier--google-auth)
 9. [Prompt Context Field](#9-prompt-context-field)
 10. [Error Handling](#10-error-handling)
+11. [Test Data Generator (Data Tab)](#11-test-data-generator-data-tab)
 
 ---
 
 ## 1. Side Panel Shell
 
 **What the user sees:**
-A persistent side panel that opens alongside any website. It has four tabs at the top: **Ideas**, **Code**, **A11y**, and **Settings**. Clicking a tab switches the view. The panel stays open as you navigate between pages. Each feature tab (Ideas, Code) is self-contained: pick an element, generate, and see results — all in one place.
+A persistent side panel that opens alongside any website. It has five tabs at the top: **Ideas**, **Code**, **Data**, **A11y**, and **Settings**. Clicking a tab switches the view. The panel stays open as you navigate between pages. Each feature tab (Ideas, Code) is self-contained: pick an element, generate, and see results — all in one place.
 
 **How to open it:**
 - Click the TestCraft extension icon — the side panel opens automatically (configured via `chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })`).
@@ -32,7 +33,7 @@ A persistent side panel that opens alongside any website. It has four tabs at th
 
 **Internal details:**
 - The side panel is a full React app mounted at `src/entrypoints/sidepanel/`.
-- Tab state is local React state (`useState<Tab>`) in `App.tsx` — not persisted. Closing and reopening the panel resets to the Ideas tab. Tabs: `ideas`, `code`, `accessibility`, `settings`.
+- Tab state is local React state (`useState<Tab>`) in `App.tsx` — not persisted. Closing and reopening the panel resets to the Ideas tab. Tabs: `ideas`, `code`, `data`, `accessibility`, `settings`.
 - `App.tsx` also manages `pendingAutomation` state for the cross-tab "Automate Selected" flow (Ideas → Code).
 - The popup at `src/entrypoints/popup/` is intentionally minimal. Its only job is to call `chrome.sidePanel.open()` and then `window.close()`.
 - The background service worker (`src/entrypoints/background.ts`) sets `openPanelOnActionClick: true` so clicking the extension icon opens the side panel directly without showing the popup.
@@ -562,6 +563,82 @@ Clicking "Try again" resets the error state and re-renders normally.
 
 ---
 
+## 11. Test Data Generator (Data Tab)
+
+**Scope (Phase 2.D):**
+1. Auto-detect form fields on tab load (inputs, textareas, selects; excluding hidden, submit, button, reset, image, and file inputs).
+2. Let users select/deselect which fields to generate data for (two-column checkbox layout, select all/deselect all).
+3. AI generates an optimal number of datasets (3-20) based on form complexity, applying test design techniques (equivalence partitioning, boundary value analysis, negative testing).
+4. Each dataset has a descriptive scenario name (e.g., "Valid Registration - All Fields", "Missing Required Email").
+5. User picks a dataset from a dropdown and clicks **Auto-fill Form**.
+6. State persists across tab switches via Zustand store.
+
+**User flow:**
+1. Open **Data** tab — form fields are auto-detected on first load.
+2. Optionally deselect fields you don't want to generate data for.
+3. Optionally expand **Additional Context** to guide generation (e.g., "banking app").
+4. Click **Generate Data**.
+5. Pick a dataset from the dropdown, preview JSON values.
+6. Click **Auto-fill Form**.
+
+**Implementation summary:**
+- `TestDataTab` component with Zustand-backed state (`test-data-store.ts`) for persistence across tab switches.
+- `ContextInput` shared component included for prompt enrichment.
+- Auto-detect on first tab mount via `useEffect` + ref guard (skips if fields already cached).
+- Field selection with checkboxes — only selected fields are sent to the AI prompt.
+- Two-column grid layout for detected fields to minimize vertical space.
+- Buttons in same row (`flex gap-2`) matching Ideas/Code tab pattern.
+- Content-script actions:
+  - `detect-form-fields` → returns normalized field descriptors.
+  - `fill-form-data` → fills fields and dispatches `input` + `change` events.
+- Form helpers (`src/lib/form-data.ts`) for DOM detection/fill logic, fully testable.
+- Test-data prompt helpers in `prompt-builder.ts`:
+  - `buildTestDataPrompt(...)` — includes test design techniques, dynamic dataset count guidance, descriptive naming rules.
+  - `parseTestDataSets(...)` — extracts JSON from AI response, handles markdown fences, validates structure.
+- Reused existing auth/provider behavior (BYOK or free-tier proxy) for generation.
+
+**Assumptions / decisions made (explicit):**
+1. Field identity is selector-based (`id` > `data-testid` > `name` > `aria-label`) for deterministic mapping.
+2. Non-data inputs excluded from detection: hidden, submit, button, reset, image, file.
+3. File inputs excluded because browsers block programmatic `.value` assignment for security.
+4. AI output contract is strict JSON with `datasets[]`, `id`, `name`, and `values` keyed by selector.
+5. AI determines optimal dataset count (3-20) based on form complexity — not hardcoded.
+6. Auto-fill dispatches both `input` and `change` events for compatibility with controlled forms (React, Vue).
+7. When select value is invalid, fallback to first option instead of failing hard.
+8. Each fill operation is wrapped in try/catch so one bad field can't crash the entire fill loop.
+9. Data tab uses one-shot generation (no generation history) to minimize complexity.
+10. All fields selected by default after detection; user deselects what they don't need.
+
+**Deferred to post-MVP (explicit):**
+1. Dataset history/versioning and re-use across pages/sessions.
+2. Per-field manual editing before fill.
+3. Multi-form scoping UI (choose target form when multiple forms exist).
+4. Rich field typing/constraints (min/max/date masks/regex) and validation-aware generation.
+5. Internationalization/localized data profiles.
+6. Better recovery UX for malformed model JSON (repair/regenerate flow).
+7. Visual diff/confirmation before applying fill.
+
+**Known limitations:**
+- Relies on selector stability; dynamic DOM changes after detection can reduce fill success.
+- Does not infer complex widget models (custom dropdown components) beyond native controls.
+- Radio groups are treated as boolean per selected element; group-aware semantics are deferred.
+- JSON parsing is intentionally strict and may reject verbose/non-conformant model responses.
+
+**Key files:**
+- `src/components/TestDataTab.tsx`
+- `src/stores/test-data-store.ts`
+- `src/lib/form-data.ts`
+- `src/entrypoints/content.ts`
+- `src/lib/prompt-builder.ts`
+- `src/lib/constants.ts`
+
+**Tests:**
+- `src/lib/form-data.test.ts`
+- `src/lib/test-data-prompt.test.ts`
+- updated tab tests in `App.test.tsx` and `TabBar.test.tsx`
+
+---
+
 ## State Management Overview
 
 All state is managed via Zustand stores. Here's what each store holds:
@@ -574,6 +651,7 @@ All state is managed via Zustand stores. Here's what each store holds:
 | `useIdeasStore` | entries[] (GenerationEntry with selectedIdeas), currentIndex, isStreaming, error | No — in-memory, keeps up to 10 generations |
 | `useCodeStore` | entries[] (GenerationEntry), currentIndex, isStreaming, error | No — in-memory, keeps up to 10 generations |
 | `useAccessibilityStore` | violations, explanations, isScanning, error | No — persists across tab switches within a session, resets on new scan |
+| `useTestDataStore` | fields, selectedSelectors, datasets, selectedDatasetId, isDetecting/Generating/Filling, error | No — persists across tab switches within a session |
 | `useAuthStore` | user, token, dailyUsage, isSigningIn | Yes — token + user synced to `chrome.storage.local` under `auth` key |
 
 ---
@@ -591,5 +669,7 @@ Communication between the side panel, background script, and content script uses
 | `highlight-element` | Side panel → Content script | Highlight element by selector |
 | `clear-highlight` | Side panel → Content script | Remove highlight |
 | `run-axe` | Side panel → Content script | Run axe-core accessibility scan |
+| `detect-form-fields` | Side panel → Content script | Detect native form fields for data generation |
+| `fill-form-data` | Side panel → Content script | Fill form values by selector mapping |
 | `capture-screenshot` | Side panel → Background | Capture + crop element screenshot |
 | `google-sign-in` | Side panel → Background | Launch Google OAuth flow, return token + user info |

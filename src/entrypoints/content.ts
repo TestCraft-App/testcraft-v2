@@ -2,6 +2,7 @@ import axe from 'axe-core';
 import { ACTIONS } from '../lib/constants';
 import { start, stop } from '../lib/element-picker';
 import { scanPage } from '../lib/page-scanner';
+import { detectFormFields, fillFormFields } from '../lib/form-data';
 
 export default defineContentScript({
     matches: ['<all_urls>'],
@@ -34,6 +35,17 @@ export default defineContentScript({
                         sendResponse({ violations: [] });
                     });
                     return true; // async response
+                }
+                case ACTIONS.DETECT_FORM_FIELDS: {
+                    const fields = detectFormFields(document);
+                    sendResponse({ fields });
+                    break;
+                }
+                case ACTIONS.FILL_FORM_DATA: {
+                    const valuesBySelector = message.payload?.valuesBySelector ?? {};
+                    const filledCount = fillFormFields(document, valuesBySelector);
+                    sendResponse({ filledCount });
+                    break;
                 }
             }
         });

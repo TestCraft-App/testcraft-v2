@@ -9,10 +9,11 @@ describe('App', () => {
         expect(screen.getByRole('tablist')).toBeInTheDocument();
     });
 
-    it('renders four tabs: Ideas, Code, A11y, Settings', () => {
+    it('renders five tabs: Ideas, Code, Data, A11y, Settings', () => {
         render(<App />);
         expect(screen.getByRole('tab', { name: 'Ideas' })).toBeInTheDocument();
         expect(screen.getByRole('tab', { name: 'Code' })).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: 'Data' })).toBeInTheDocument();
         expect(screen.getByRole('tab', { name: 'A11y' })).toBeInTheDocument();
         expect(screen.getByRole('tab', { name: 'Settings' })).toBeInTheDocument();
     });
@@ -33,6 +34,16 @@ describe('App', () => {
         expect(screen.getByRole('tab', { name: 'Code' })).toHaveAttribute('aria-selected', 'true');
         expect(screen.getByRole('tab', { name: 'Ideas' })).toHaveAttribute('aria-selected', 'false');
         expect(screen.getByText('Automate Tests')).toBeInTheDocument();
+    });
+
+    it('switches to Data tab on click', async () => {
+        const user = userEvent.setup();
+        render(<App />);
+
+        await user.click(screen.getByRole('tab', { name: 'Data' }));
+
+        expect(screen.getByRole('tab', { name: 'Data' })).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByText('Detect Fields')).toBeInTheDocument();
     });
 
     it('switches to A11y tab on click', async () => {

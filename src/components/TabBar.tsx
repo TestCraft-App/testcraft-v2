@@ -3,6 +3,7 @@ import type { Tab } from '../entrypoints/sidepanel/App';
 const tabs: { id: Tab; label: string }[] = [
     { id: 'ideas', label: 'Ideas' },
     { id: 'code', label: 'Code' },
+    { id: 'data', label: 'Data' },
     { id: 'accessibility', label: 'A11y' },
     { id: 'settings', label: 'Settings' },
 ];

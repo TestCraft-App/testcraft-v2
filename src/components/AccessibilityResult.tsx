@@ -1,7 +1,9 @@
 import { groupByImpact, impactLabels, type A11yViolation } from '../lib/accessibility';
 import { buildAccessibilityPrompt, ACCESSIBILITY_SYSTEM_MESSAGE } from '../lib/prompt-builder';
-import { createAIProvider } from '../lib/ai-provider';
+import { createAIProvider, AIProviderError } from '../lib/ai-provider';
+import { FREE_TIER_MODEL } from '../lib/constants';
 import { useSettingsStore } from '../stores/settings-store';
+import { useAuthStore, canGenerate, isFreeTier } from '../stores/auth-store';
 import { useAccessibilityStore } from '../stores/accessibility-store';
 
 interface AccessibilityResultProps {
@@ -50,6 +52,9 @@ export function AccessibilityResult({ violations }: AccessibilityResultProps) {
 
 function ViolationItem({ violation }: { violation: A11yViolation }) {
     const settings = useSettingsStore();
+    const token = useAuthStore((s) => s.token);
+    const signOut = useAuthStore((s) => s.signOut);
+    const refreshUsage = useAuthStore((s) => s.refreshUsage);
     const {
         explanations, analyzing, analyzeErrors, collapsed,
         setExplanation, setAnalyzing, setAnalyzeError, setCollapsed,
@@ -63,6 +68,11 @@ function ViolationItem({ violation }: { violation: A11yViolation }) {
     const elementHtml = violation.nodes[0]?.html ?? '';
 
     const handleAnalyze = async () => {
+        if (!canGenerate(settings.apiKey, token)) {
+            setAnalyzeError(violation.id, 'Sign in with Google or add an API key in Settings to generate.');
+            return;
+        }
+
         setAnalyzing(violation.id, true);
         setAnalyzeError(violation.id, null);
         setCollapsed(violation.id, false);
@@ -73,12 +83,15 @@ function ViolationItem({ violation }: { violation: A11yViolation }) {
             settings.promptContext,
         );
 
+        const useProxy = isFreeTier(settings.apiKey, token);
+
         try {
             const provider = createAIProvider({
-                provider: settings.provider,
+                provider: settings.apiKey ? settings.provider : 'openai',
                 apiKey: settings.apiKey,
-                model: settings.model,
-                useProxy: settings.useProxy,
+                model: useProxy ? FREE_TIER_MODEL : settings.model,
+                useProxy,
+                authToken: useProxy ? (token ?? undefined) : undefined,
             });
 
             let result = '';
@@ -86,8 +99,16 @@ function ViolationItem({ violation }: { violation: A11yViolation }) {
                 result += chunk;
             }
             setExplanation(violation.id, result);
-        } catch {
-            setAnalyzeError(violation.id, 'Failed to generate analysis. Check your AI provider settings.');
+
+            if (useProxy) {
+                refreshUsage();
+            }
+        } catch (err) {
+            if (err instanceof AIProviderError && err.status === 401 && useProxy) {
+                signOut();
+            }
+            const message = err instanceof Error ? err.message : 'Failed to generate analysis.';
+            setAnalyzeError(violation.id, message);
         } finally {
             setAnalyzing(violation.id, false);
         }

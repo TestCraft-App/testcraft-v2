@@ -5,11 +5,12 @@ import { IdeasTab } from '../../components/IdeasTab';
 import { CodeTab } from '../../components/CodeTab';
 import { AccessibilityTab } from '../../components/AccessibilityTab';
 import { SettingsTab } from '../../components/SettingsTab';
+import { TestDataTab } from '../../components/TestDataTab';
 import { useSettingsStore } from '../../stores/settings-store';
 import { useAuthStore } from '../../stores/auth-store';
 import type { PickedElement } from '../../lib/types';
 
-export type Tab = 'ideas' | 'code' | 'accessibility' | 'settings';
+export type Tab = 'ideas' | 'code' | 'data' | 'accessibility' | 'settings';
 
 export function App() {
     const [activeTab, setActiveTab] = useState<Tab>('ideas');
@@ -72,6 +73,7 @@ export function App() {
                             onClearPending={handleClearPending}
                         />
                     )}
+                    {activeTab === 'data' && <TestDataTab />}
                     {activeTab === 'accessibility' && <AccessibilityTab />}
                     {activeTab === 'settings' && <SettingsTab />}
                 </main>

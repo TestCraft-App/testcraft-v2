@@ -9,6 +9,8 @@ export const ACTIONS = {
     SCAN_PAGE: 'scan-page',
     PAGE_SCANNED: 'page-scanned',
     RUN_AXE: 'run-axe',
+    DETECT_FORM_FIELDS: 'detect-form-fields',
+    FILL_FORM_DATA: 'fill-form-data',
     GOOGLE_SIGN_IN: 'google-sign-in',
 } as const;
 
