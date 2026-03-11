@@ -2,7 +2,7 @@
 
 This document describes every feature in TestCraft v2, what it does from a user perspective, how it works internally, and where the code lives.
 
-Last updated: Test data generator MVP (Stage 2.D)
+Last updated: Strengthen generation flow tests (40 integration tests)
 
 ---
 

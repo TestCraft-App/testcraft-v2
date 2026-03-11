@@ -1,10 +1,16 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CodeTab } from './CodeTab';
 import { useElementStore } from '../stores/element-store';
 import { useCodeStore } from '../stores/code-store';
 import type { PickedElement } from '../lib/types';
+
+const mockGenerate = vi.hoisted(() => vi.fn());
+
+vi.mock('../hooks/useAIGenerate', () => ({
+    useAIGenerate: () => ({ generate: mockGenerate }),
+}));
 
 const mockElement: PickedElement = {
     outerHTML: '<button>Sign In</button>',
@@ -18,8 +24,9 @@ const mockElement: PickedElement = {
 
 describe('CodeTab', () => {
     beforeEach(() => {
+        mockGenerate.mockReset().mockResolvedValue(undefined);
         useElementStore.setState({ pickedElement: null, isPicking: false });
-        useCodeStore.setState({ entries: [], currentIndex: -1, isStreaming: false, error: null });
+        useCodeStore.setState({ entries: [], currentIndex: -1, isStreaming: false, error: null, streamingIndex: -1 });
     });
 
     it('renders Pick Element and Automate Tests buttons', () => {
@@ -67,5 +74,53 @@ describe('CodeTab', () => {
 
         await user.click(screen.getByText('Pick Element'));
         expect(screen.getByText('Cancel Picking')).toBeInTheDocument();
+    });
+
+    // --- Generation flow tests ---
+
+    it('Automate Tests calls generate with correct prompt', async () => {
+        useElementStore.setState({ pickedElement: mockElement });
+
+        const user = userEvent.setup();
+        render(<CodeTab pendingAutomation={null} onClearPending={() => {}} />);
+        await user.click(screen.getByText('Automate Tests'));
+
+        expect(mockGenerate).toHaveBeenCalledTimes(1);
+        const [prompt, systemMsg, label, pageUrl] = mockGenerate.mock.calls[0];
+        expect(prompt).toContain('Playwright');
+        expect(prompt).toContain('<button>Sign In</button>');
+        expect(systemMsg).toContain('test automation engineer');
+        expect(label).toBe('Sign In');
+        expect(pageUrl).toBe('https://example.com/login');
+    });
+
+    it('Automate Tests is disabled during streaming', () => {
+        useElementStore.setState({ pickedElement: mockElement });
+        useCodeStore.setState({ isStreaming: true });
+        render(<CodeTab pendingAutomation={null} onClearPending={() => {}} />);
+
+        expect(screen.getByText('Automate Tests')).toBeDisabled();
+    });
+
+    it('pendingAutomation triggers auto-generation on mount', async () => {
+        const pending = { ideas: ['Click button', 'Verify text'], element: mockElement };
+        render(<CodeTab pendingAutomation={pending} onClearPending={() => {}} />);
+
+        await waitFor(() => {
+            expect(mockGenerate).toHaveBeenCalledTimes(1);
+        });
+        const [prompt] = mockGenerate.mock.calls[0];
+        expect(prompt).toContain('Click button');
+        expect(prompt).toContain('Verify text');
+    });
+
+    it('pendingAutomation calls onClearPending after generation', async () => {
+        const onClearPending = vi.fn();
+        const pending = { ideas: ['Test idea'], element: mockElement };
+        render(<CodeTab pendingAutomation={pending} onClearPending={onClearPending} />);
+
+        await waitFor(() => {
+            expect(onClearPending).toHaveBeenCalled();
+        });
     });
 });
