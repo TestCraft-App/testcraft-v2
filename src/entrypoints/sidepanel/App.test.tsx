@@ -43,7 +43,7 @@ describe('App', () => {
         await user.click(screen.getByRole('tab', { name: 'Data' }));
 
         expect(screen.getByRole('tab', { name: 'Data' })).toHaveAttribute('aria-selected', 'true');
-        expect(screen.getByText('Detect Form Fields')).toBeInTheDocument();
+        expect(screen.getByText('Detect Fields')).toBeInTheDocument();
     });
 
     it('switches to A11y tab on click', async () => {

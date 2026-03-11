@@ -207,7 +207,7 @@ To load manually:
 ### Test
 
 ```bash
-npm test              # Run all 248 tests (unit + component + integration)
+npm test              # Run all 259 tests (unit + component + integration)
 npm run test:watch    # Watch mode during development
 npm run test:coverage # Coverage report
 ```
@@ -300,7 +300,7 @@ Ship a working v2 that's better than v1 in every way.
 
 | 1.9 | Free tier with Google OAuth (10/day gpt-4o-mini, auth store, proxy integration) | Done |
 
-**248 tests across 26 files. Build: ~918 KB (includes axe-core bundled in content script).**
+**259 tests across 28 files. Build: ~931 KB (includes axe-core bundled in content script).**
 
 ### Phase 2 — Test Intelligence
 

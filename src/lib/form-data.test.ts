@@ -24,6 +24,25 @@ describe('form-data', () => {
         expect(fields[2].options).toContain('uy');
     });
 
+    it('excludes submit, button, reset, image, file, and hidden inputs', () => {
+        document.body.innerHTML = `
+            <form>
+                <input id="name" name="name" type="text" />
+                <input type="submit" value="Submit" />
+                <input type="button" value="Click" />
+                <input type="reset" value="Reset" />
+                <input type="image" src="img.png" alt="Go" />
+                <input type="file" name="upload" />
+                <input type="hidden" name="csrf" value="tok123" />
+            </form>
+        `;
+
+        const fields = detectFormFields(document);
+
+        expect(fields).toHaveLength(1);
+        expect(fields[0]).toMatchObject({ selector: '#name', type: 'text' });
+    });
+
     it('fills text/select/checkbox fields and returns count', () => {
         document.body.innerHTML = `
             <input id="firstName" />
@@ -41,5 +60,21 @@ describe('form-data', () => {
         expect((document.querySelector('#firstName') as HTMLInputElement).value).toBe('Damian');
         expect((document.querySelector('#role') as HTMLSelectElement).value).toBe('admin');
         expect((document.querySelector('#active') as HTMLInputElement).checked).toBe(true);
+    });
+
+    it('skips file inputs and invalid selectors without crashing', () => {
+        document.body.innerHTML = `
+            <input id="name" />
+            <input id="upload" type="file" />
+        `;
+
+        const count = fillFormFields(document, {
+            '#name': 'Jane',
+            '#upload': 'photo.png',
+            '#nonexistent': 'ghost',
+        });
+
+        expect(count).toBe(1);
+        expect((document.querySelector('#name') as HTMLInputElement).value).toBe('Jane');
     });
 });

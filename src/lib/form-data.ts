@@ -13,12 +13,20 @@ export interface TestDataSet {
     values: Record<string, string | boolean>;
 }
 
+/** Input types that are not data-entry fields and should be excluded from detection. */
+const EXCLUDED_INPUT_TYPES = new Set(['hidden', 'submit', 'button', 'reset', 'image', 'file']);
+
 export function detectFormFields(doc: Document): DetectedFormField[] {
     const controls = Array.from(
         doc.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
-            'input:not([type="hidden"]), textarea, select',
+            'input, textarea, select',
         ),
-    );
+    ).filter((el) => {
+        if (el instanceof HTMLInputElement) {
+            return !EXCLUDED_INPUT_TYPES.has((el.type || 'text').toLowerCase());
+        }
+        return true;
+    });
 
     const fields: DetectedFormField[] = [];
     const seen = new Set<string>();
@@ -53,46 +61,49 @@ export function fillFormFields(doc: Document, valuesBySelector: Record<string, s
     let filled = 0;
 
     for (const [selector, rawValue] of Object.entries(valuesBySelector)) {
-        let el: Element | null = null;
         try {
-            el = doc.querySelector(selector);
-        } catch {
-            continue;
-        }
-        if (!el) continue;
+            const el = doc.querySelector(selector);
+            if (!el) continue;
 
-        if (el instanceof HTMLInputElement) {
-            const inputType = (el.type || 'text').toLowerCase();
-            if (inputType === 'checkbox' || inputType === 'radio') {
-                el.checked = Boolean(rawValue);
+            if (el instanceof HTMLInputElement) {
+                const inputType = (el.type || 'text').toLowerCase();
+                // Skip file inputs — browsers block programmatic value assignment for security
+                if (inputType === 'file') continue;
+
+                if (inputType === 'checkbox' || inputType === 'radio') {
+                    el.checked = Boolean(rawValue);
+                    dispatchInputEvents(el);
+                    filled++;
+                    continue;
+                }
+
+                el.value = String(rawValue ?? '');
                 dispatchInputEvents(el);
                 filled++;
                 continue;
             }
 
-            el.value = String(rawValue ?? '');
-            dispatchInputEvents(el);
-            filled++;
-            continue;
-        }
-
-        if (el instanceof HTMLTextAreaElement) {
-            el.value = String(rawValue ?? '');
-            dispatchInputEvents(el);
-            filled++;
-            continue;
-        }
-
-        if (el instanceof HTMLSelectElement) {
-            const value = String(rawValue ?? '');
-            const hasOption = Array.from(el.options).some((option) => option.value === value);
-            if (hasOption) {
-                el.value = value;
-            } else if (el.options.length > 0) {
-                el.value = el.options[0].value;
+            if (el instanceof HTMLTextAreaElement) {
+                el.value = String(rawValue ?? '');
+                dispatchInputEvents(el);
+                filled++;
+                continue;
             }
-            dispatchInputEvents(el);
-            filled++;
+
+            if (el instanceof HTMLSelectElement) {
+                const value = String(rawValue ?? '');
+                const hasOption = Array.from(el.options).some((option) => option.value === value);
+                if (hasOption) {
+                    el.value = value;
+                } else if (el.options.length > 0) {
+                    el.value = el.options[0].value;
+                }
+                dispatchInputEvents(el);
+                filled++;
+            }
+        } catch {
+            // Skip fields that fail (e.g., invalid selector, read-only element)
+            continue;
         }
     }
 
