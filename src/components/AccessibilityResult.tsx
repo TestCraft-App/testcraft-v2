@@ -68,8 +68,15 @@ function ViolationItem({ violation }: { violation: A11yViolation }) {
     const elementHtml = violation.nodes[0]?.html ?? '';
 
     const handleAnalyze = async () => {
-        if (!canGenerate(settings.apiKey, token)) {
-            setAnalyzeError(violation.id, 'Sign in with Google or add an API key in Settings to generate.');
+        const effectiveKey = settings.useOwnKey ? settings.apiKey : '';
+
+        if (!canGenerate(effectiveKey, token)) {
+            setAnalyzeError(
+                violation.id,
+                settings.useOwnKey
+                    ? 'Add an API key in Settings to generate.'
+                    : 'Sign in with Google or enable your API key in Settings to generate.',
+            );
             return;
         }
 
@@ -83,12 +90,13 @@ function ViolationItem({ violation }: { violation: A11yViolation }) {
             settings.promptContexts.a11y,
         );
 
-        const useProxy = isFreeTier(settings.apiKey, token);
+        const hasKey = !!effectiveKey;
+        const useProxy = isFreeTier(effectiveKey, token);
 
         try {
             const provider = createAIProvider({
-                provider: settings.apiKey ? settings.provider : 'openai',
-                apiKey: settings.apiKey,
+                provider: hasKey ? settings.provider : 'openai',
+                apiKey: effectiveKey,
                 model: useProxy ? FREE_TIER_MODEL : settings.model,
                 useProxy,
                 authToken: useProxy ? (token ?? undefined) : undefined,

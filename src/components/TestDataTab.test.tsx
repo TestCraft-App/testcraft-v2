@@ -55,6 +55,7 @@ describe('TestDataTab', () => {
             language: 'typescript',
             usePOM: false,
             useProxy: false,
+            useOwnKey: false,
             theme: 'light',
             promptContext: '',
             promptContexts: { ideas: '', code: '', a11y: '', data: '' },
@@ -128,7 +129,7 @@ describe('TestDataTab', () => {
 
     it('Generate Data creates provider with direct config when API key is set', async () => {
         useTestDataStore.getState().setFields(mockFields);
-        useSettingsStore.setState({ apiKey: 'sk-test', provider: 'google', model: 'gemini-2.5-flash' });
+        useSettingsStore.setState({ apiKey: 'sk-test', provider: 'google', model: 'gemini-2.5-flash', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createStreamingProvider([validDatasetJson]));
 
         const user = userEvent.setup();
@@ -154,7 +155,7 @@ describe('TestDataTab', () => {
         await user.click(screen.getByText('Generate Data'));
 
         await waitFor(() => {
-            expect(screen.getByText(/Sign in with Google or add an API key/)).toBeInTheDocument();
+            expect(screen.getByText(/Sign in with Google or enable your API key/)).toBeInTheDocument();
         });
         expect(mockCreateAIProvider).not.toHaveBeenCalled();
     });
@@ -193,7 +194,7 @@ describe('TestDataTab', () => {
 
     it('shows datasets after successful generation', async () => {
         useTestDataStore.getState().setFields(mockFields);
-        useSettingsStore.setState({ apiKey: 'sk-test' });
+        useSettingsStore.setState({ apiKey: 'sk-test', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createStreamingProvider([validDatasetJson]));
 
         const user = userEvent.setup();

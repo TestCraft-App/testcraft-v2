@@ -70,8 +70,14 @@ export function TestDataTab() {
             return;
         }
 
-        if (!canGenerate(settings.apiKey, token)) {
-            store.setError('Sign in with Google or add an API key in Settings to generate.');
+        const effectiveKey = settings.useOwnKey ? settings.apiKey : '';
+
+        if (!canGenerate(effectiveKey, token)) {
+            store.setError(
+                settings.useOwnKey
+                    ? 'Add an API key in Settings to generate.'
+                    : 'Sign in with Google or enable your API key in Settings to generate.',
+            );
             return;
         }
 
@@ -85,10 +91,11 @@ export function TestDataTab() {
                 title: tab?.title ?? 'Current page',
             };
 
-            const useProxy = isFreeTier(settings.apiKey, token);
+            const hasKey = !!effectiveKey;
+            const useProxy = isFreeTier(effectiveKey, token);
             const provider = createAIProvider({
-                provider: settings.apiKey ? settings.provider : 'openai',
-                apiKey: settings.apiKey,
+                provider: hasKey ? settings.provider : 'openai',
+                apiKey: effectiveKey,
                 model: useProxy ? FREE_TIER_MODEL : settings.model,
                 useProxy,
                 authToken: useProxy ? (token ?? undefined) : undefined,
@@ -112,7 +119,7 @@ export function TestDataTab() {
                 refreshUsage();
             }
         } catch (err) {
-            if (err instanceof AIProviderError && err.status === 401 && isFreeTier(settings.apiKey, token)) {
+            if (err instanceof AIProviderError && err.status === 401 && isFreeTier(effectiveKey, token)) {
                 signOut();
             }
             const message = err instanceof Error ? err.message : 'Failed to generate test data.';

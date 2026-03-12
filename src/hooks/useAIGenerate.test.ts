@@ -41,6 +41,7 @@ describe('useAIGenerate', () => {
             language: 'typescript',
             usePOM: false,
             useProxy: false,
+            useOwnKey: false,
             theme: 'light',
             promptContext: '',
             promptContexts: { ideas: '', code: '', a11y: '', data: '' },
@@ -55,8 +56,8 @@ describe('useAIGenerate', () => {
         });
     });
 
-    it('creates provider with direct config when API key is set', async () => {
-        useSettingsStore.setState({ apiKey: 'sk-test', provider: 'openai', model: 'gpt-4o' });
+    it('creates provider with direct config when useOwnKey is on and API key is set', async () => {
+        useSettingsStore.setState({ apiKey: 'sk-test', provider: 'openai', model: 'gpt-4o', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createStreamingProvider([]));
 
         const { result } = renderHook(() => useAIGenerate(actions));
@@ -71,7 +72,7 @@ describe('useAIGenerate', () => {
         });
     });
 
-    it('creates provider with proxy config when free tier', async () => {
+    it('creates provider with proxy config when free tier (useOwnKey off)', async () => {
         useAuthStore.setState({ token: 'google-id-token', signOut: mockSignOut, refreshUsage: mockRefreshUsage });
         mockCreateAIProvider.mockReturnValue(createStreamingProvider([]));
 
@@ -87,18 +88,43 @@ describe('useAIGenerate', () => {
         });
     });
 
-    it('sets error when neither API key nor token is available', async () => {
+    it('uses proxy when useOwnKey is off even if API key exists', async () => {
+        useSettingsStore.setState({ apiKey: 'sk-test', useOwnKey: false });
+        useAuthStore.setState({ token: 'tok', signOut: mockSignOut, refreshUsage: mockRefreshUsage });
+        mockCreateAIProvider.mockReturnValue(createStreamingProvider([]));
+
+        const { result } = renderHook(() => useAIGenerate(actions));
+        await act(() => result.current.generate('prompt', 'system', 'Btn', 'https://x.com'));
+
+        expect(mockCreateAIProvider).toHaveBeenCalledWith(
+            expect.objectContaining({ useProxy: true, apiKey: '', model: 'gpt-4o-mini' }),
+        );
+    });
+
+    it('sets error when useOwnKey is off and no token', async () => {
         const { result } = renderHook(() => useAIGenerate(actions));
         await act(() => result.current.generate('prompt', 'system', 'Button', 'https://x.com'));
 
         expect(mockCreateAIProvider).not.toHaveBeenCalled();
         expect(actions.setError).toHaveBeenCalledWith(
-            'Sign in with Google or add an API key in Settings to generate.',
+            'Sign in with Google or enable your API key in Settings to generate.',
+        );
+    });
+
+    it('sets error when useOwnKey is on but no API key', async () => {
+        useSettingsStore.setState({ useOwnKey: true });
+
+        const { result } = renderHook(() => useAIGenerate(actions));
+        await act(() => result.current.generate('prompt', 'system', 'Button', 'https://x.com'));
+
+        expect(mockCreateAIProvider).not.toHaveBeenCalled();
+        expect(actions.setError).toHaveBeenCalledWith(
+            'Add an API key in Settings to generate.',
         );
     });
 
     it('calls startGeneration before streaming', async () => {
-        useSettingsStore.setState({ apiKey: 'sk-test' });
+        useSettingsStore.setState({ apiKey: 'sk-test', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createStreamingProvider(['chunk']));
 
         const { result } = renderHook(() => useAIGenerate(actions));
@@ -111,7 +137,7 @@ describe('useAIGenerate', () => {
     });
 
     it('streams content chunks to appendContent', async () => {
-        useSettingsStore.setState({ apiKey: 'sk-test' });
+        useSettingsStore.setState({ apiKey: 'sk-test', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createStreamingProvider(['Hello', ' world']));
 
         const { result } = renderHook(() => useAIGenerate(actions));
@@ -123,7 +149,7 @@ describe('useAIGenerate', () => {
     });
 
     it('calls setStreaming(false) after success', async () => {
-        useSettingsStore.setState({ apiKey: 'sk-test' });
+        useSettingsStore.setState({ apiKey: 'sk-test', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createStreamingProvider(['ok']));
 
         const { result } = renderHook(() => useAIGenerate(actions));
@@ -143,7 +169,7 @@ describe('useAIGenerate', () => {
     });
 
     it('does NOT call refreshUsage for direct API', async () => {
-        useSettingsStore.setState({ apiKey: 'sk-test' });
+        useSettingsStore.setState({ apiKey: 'sk-test', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createStreamingProvider(['ok']));
 
         const { result } = renderHook(() => useAIGenerate(actions));
@@ -164,7 +190,7 @@ describe('useAIGenerate', () => {
     });
 
     it('does NOT call signOut on 401 in direct mode', async () => {
-        useSettingsStore.setState({ apiKey: 'sk-test' });
+        useSettingsStore.setState({ apiKey: 'sk-test', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createErrorProvider(401, 'Unauthorized'));
 
         const { result } = renderHook(() => useAIGenerate(actions));
@@ -175,7 +201,7 @@ describe('useAIGenerate', () => {
     });
 
     it('sets error message on provider failure', async () => {
-        useSettingsStore.setState({ apiKey: 'sk-test' });
+        useSettingsStore.setState({ apiKey: 'sk-test', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createErrorProvider(500, 'Server error'));
 
         const { result } = renderHook(() => useAIGenerate(actions));

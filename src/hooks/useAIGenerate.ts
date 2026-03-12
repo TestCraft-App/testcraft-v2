@@ -19,12 +19,17 @@ export function useAIGenerate(storeActions: GenerationStoreActions) {
 
     const generate = useCallback(
         async (prompt: string, systemMessage: string, elementLabel: string, pageUrl: string) => {
-            // Determine generation mode
-            const hasKey = !!settings.apiKey;
-            const useProxy = isFreeTier(settings.apiKey, token);
+            // Determine generation mode based on useOwnKey toggle
+            const effectiveKey = settings.useOwnKey ? settings.apiKey : '';
+            const hasKey = !!effectiveKey;
+            const useProxy = isFreeTier(effectiveKey, token);
 
-            if (!canGenerate(settings.apiKey, token)) {
-                storeActions.setError('Sign in with Google or add an API key in Settings to generate.');
+            if (!canGenerate(effectiveKey, token)) {
+                storeActions.setError(
+                    settings.useOwnKey
+                        ? 'Add an API key in Settings to generate.'
+                        : 'Sign in with Google or enable your API key in Settings to generate.',
+                );
                 return;
             }
 
@@ -33,7 +38,7 @@ export function useAIGenerate(storeActions: GenerationStoreActions) {
             try {
                 const provider = createAIProvider({
                     provider: hasKey ? settings.provider : 'openai',
-                    apiKey: settings.apiKey,
+                    apiKey: effectiveKey,
                     model: useProxy ? FREE_TIER_MODEL : settings.model,
                     useProxy,
                     authToken: useProxy ? (token ?? undefined) : undefined,
@@ -57,7 +62,7 @@ export function useAIGenerate(storeActions: GenerationStoreActions) {
                 storeActions.setStreaming(false);
             }
         },
-        [settings.provider, settings.apiKey, settings.model, token, signOut, refreshUsage, storeActions],
+        [settings.provider, settings.apiKey, settings.model, settings.useOwnKey, token, signOut, refreshUsage, storeActions],
     );
 
     return { generate };
