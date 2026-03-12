@@ -27,7 +27,8 @@ interface CodeTabProps {
 
 export function CodeTab({ pendingAutomation, onClearPending }: CodeTabProps) {
     const { pickedElement, isPicking } = useElementStore();
-    const { framework, language, usePOM, promptContext } = useSettingsStore();
+    const { framework, language, usePOM } = useSettingsStore();
+    const promptContext = useSettingsStore((s) => s.promptContexts.code);
     const { handlePickElement } = useElementPicker();
     const store = useCodeStore();
     const pendingProcessed = useRef(false);
@@ -99,7 +100,7 @@ export function CodeTab({ pendingAutomation, onClearPending }: CodeTabProps) {
                 </button>
             </div>
 
-            <ContextInput />
+            <ContextInput tabKey="code" />
 
             {hasElement && <ElementPreview />}
 

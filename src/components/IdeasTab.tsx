@@ -21,7 +21,7 @@ interface IdeasTabProps {
 
 export function IdeasTab({ onAutomateSelected }: IdeasTabProps) {
     const { pickedElement, isPicking } = useElementStore();
-    const promptContext = useSettingsStore((s) => s.promptContext);
+    const promptContext = useSettingsStore((s) => s.promptContexts.ideas);
     const { handlePickElement } = useElementPicker();
     const store = useIdeasStore();
 
@@ -82,7 +82,7 @@ export function IdeasTab({ onAutomateSelected }: IdeasTabProps) {
                 </button>
             </div>
 
-            <ContextInput />
+            <ContextInput tabKey="ideas" />
 
             {hasElement && <ElementPreview />}
 

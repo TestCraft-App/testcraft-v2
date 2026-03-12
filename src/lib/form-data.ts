@@ -16,9 +16,9 @@ export interface TestDataSet {
 /** Input types that are not data-entry fields and should be excluded from detection. */
 const EXCLUDED_INPUT_TYPES = new Set(['hidden', 'submit', 'button', 'reset', 'image', 'file']);
 
-export function detectFormFields(doc: Document): DetectedFormField[] {
+export function detectFormFields(root: Document | Element): DetectedFormField[] {
     const controls = Array.from(
-        doc.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+        root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
             'input, textarea, select',
         ),
     ).filter((el) => {

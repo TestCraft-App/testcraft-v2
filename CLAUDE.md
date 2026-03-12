@@ -69,7 +69,7 @@ src/
 
 - `src/lib/ai-provider.ts` — Multi-provider SSE streaming (OpenAI, Anthropic, Google, proxy)
 - `src/lib/prompt-builder.ts` — Prompt builders for ideas, automation, accessibility, test data; all accept optional `context` param
-- `src/components/ContextInput.tsx` — Collapsible "Additional Context" textarea (shared across Ideas, Code, A11y, Data tabs); stored as `promptContext` in settings store
+- `src/components/ContextInput.tsx` — Collapsible "Additional Context" textarea (per-tab independent context); stored as `promptContexts` record in settings store, keyed by `ContextTab` (`ideas`, `code`, `a11y`, `data`)
 - `src/hooks/useAIGenerate.ts` — Parameterized hook; auto-determines direct vs proxy mode based on API key + auth state
 
 ### Free Tier (Google OAuth)
@@ -90,11 +90,11 @@ Each feature tab maintains up to 10 generation entries. `GenerationHistory.tsx` 
 `src/entrypoints/content.ts` handles:
 - Element picking (hover highlight, click capture, HTML extraction)
 - axe-core accessibility scanning (full page, triggered by `RUN_AXE` message)
-- Form field detection and auto-fill (`DETECT_FORM_FIELDS`, `FILL_FORM_DATA`)
+- Form field detection and auto-fill (`DETECT_FORM_FIELDS` with optional scoped detection, `FILL_FORM_DATA`)
 
 ### Testing
 
-- **299 tests** across 30 files, all passing
+- **306 tests** across 30 files, all passing
 - Tests co-located with components (`*.test.tsx` / `*.test.ts`)
 - Chrome APIs mocked in `src/test/chrome-mock.ts` with `resetChromeStore()` / `setChromeStoreData()`
 - `navigator.clipboard` mock: use `Object.defineProperty` (read-only in jsdom)

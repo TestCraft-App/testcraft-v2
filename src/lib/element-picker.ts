@@ -5,6 +5,7 @@ const HIGHLIGHT_ID = 'testcraft-highlight-overlay';
 const HIGHLIGHT_STYLE = 'outline: 2px solid #4f46e5; outline-offset: 2px; cursor: crosshair;';
 
 let highlightedElement: HTMLElement | null = null;
+let lastPickedElement: Element | null = null;
 let isActive = false;
 
 function getElementAttributes(el: Element): Record<string, string> {
@@ -51,6 +52,7 @@ function onClick(e: MouseEvent) {
     e.stopPropagation();
 
     const target = e.target as HTMLElement;
+    lastPickedElement = target;
     removeHighlight();
     stop();
 
@@ -97,4 +99,8 @@ export function stop() {
 
 export function isPickerActive() {
     return isActive;
+}
+
+export function getLastPickedElement(): Element | null {
+    return lastPickedElement;
 }

@@ -2,7 +2,7 @@
 
 This document describes every feature in TestCraft v2, what it does from a user perspective, how it works internally, and where the code lives.
 
-Last updated: Strengthen generation flow tests (40 integration tests)
+Last updated: Scoped element picker for Data tab + per-tab prompt context
 
 ---
 
@@ -488,15 +488,15 @@ axe-core is bundled into the content script (~500KB). It runs deterministically 
 
 **What the user sees:**
 
-A collapsible "Additional Context" section appears on all three feature tabs (Ideas, Code, A11y), between the action buttons and the element preview / results area.
+A collapsible "Additional Context" section appears on all four feature tabs (Ideas, Code, Data, A11y), between the action buttons and the element preview / results area.
 
 1. Click "Additional Context" to expand a textarea.
 2. Type context like "banking login form" or "e-commerce checkout — focus on security".
 3. An "active" badge appears on the header when context is present.
 4. A character counter shows usage out of the 500-character limit.
 5. A clear (×) button removes the context in one click.
-6. Context is shared across all tabs — set it once, it applies everywhere.
-7. Close and reopen the popup — context persists (stored in `chrome.storage.local`).
+6. Each tab maintains its own independent context — different context for Ideas vs Code vs Data vs A11y.
+7. Close and reopen the popup — context persists per tab (stored in `chrome.storage.local`).
 
 **How it improves AI output:**
 
@@ -508,10 +508,10 @@ Without context, the AI only sees raw HTML (`<button class="btn-primary">Submit<
 **How it works internally:**
 
 ```
-User types in ContextInput textarea
+User types in ContextInput textarea (each tab instance has its own tabKey)
     → Local state updates immediately (responsive typing)
-    → After 400ms debounce, updateSettings({ promptContext: value }) persists to store + chrome.storage
-    → When generating, each tab reads promptContext from settings store
+    → After 400ms debounce, updateSettings({ promptContexts: { ...current, [tabKey]: value } })
+    → When generating, each tab reads its own context from promptContexts[tabKey]
     → Tab passes context to the relevant prompt builder function
     → Prompt builder injects "## Additional Context\n{context}" into the prompt
     → AI receives the enriched prompt and produces context-aware output
@@ -524,15 +524,16 @@ User types in ContextInput textarea
 
 **Special cases:**
 - Empty/whitespace-only context: no `## Additional Context` block is added (backward compatible)
-- `CodeTab` pending automation flow (Ideas → "Automate Selected" → Code): reads `promptContext` at generation time
-- `AccessibilityResult` → ViolationItem "Analyze" button: reads `promptContext` from settings store directly
+- `CodeTab` pending automation flow (Ideas → "Automate Selected" → Code): reads `promptContexts.code` at generation time
+- `AccessibilityResult` → ViolationItem "Analyze" button: reads `promptContexts.a11y` from settings store directly
+- Migration: existing users with a single `promptContext` get it copied to all four tabs on first load
 
 **Key files:**
-- `src/components/ContextInput.tsx` — Collapsible textarea component (debounced, 500-char limit, clear button)
-- `src/stores/settings-store.ts` — `promptContext: string` in Settings interface
-- `src/lib/prompt-builder.ts` — All 3 builders accept optional `context?: string` param
+- `src/components/ContextInput.tsx` — Collapsible textarea component (debounced, 500-char limit, clear button); accepts `tabKey` prop
+- `src/stores/settings-store.ts` — `promptContexts: Record<ContextTab, string>` in Settings interface (ContextTab = `'ideas' | 'code' | 'a11y' | 'data'`)
+- `src/lib/prompt-builder.ts` — All 4 builders accept optional `context?: string` param
 
-**Tests:** `ContextInput.test.tsx` (12), `prompt-builder.test.ts` (7 new context tests)
+**Tests:** `ContextInput.test.tsx` (13 — includes tab independence test), `prompt-builder.test.ts` (7 context tests)
 
 ---
 
@@ -574,22 +575,25 @@ Clicking "Try again" resets the error state and re-renders normally.
 6. State persists across tab switches via Zustand store.
 
 **User flow:**
-1. Open **Data** tab — form fields are auto-detected on first load.
-2. Optionally deselect fields you don't want to generate data for.
-3. Optionally expand **Additional Context** to guide generation (e.g., "banking app").
-4. Click **Generate Data**.
-5. Pick a dataset from the dropdown, preview JSON values.
-6. Click **Auto-fill Form**.
+1. Open **Data** tab — form fields are auto-detected page-wide on first load.
+2. Optionally click **Pick Element** to scope detection to a specific container (e.g., a `<form>` or `<div>`). A scope indicator shows "Scope: \<label\>" or "Detecting on entire page".
+3. Click **Detect Fields** to re-detect (scoped or page-wide).
+4. Optionally deselect fields you don't want to generate data for.
+5. Optionally expand **Additional Context** to guide generation (e.g., "banking app"). Context is independent per tab.
+6. Click **Generate Data**.
+7. Pick a dataset from the dropdown, preview JSON values.
+8. Click **Auto-fill Form**.
 
 **Implementation summary:**
 - `TestDataTab` component with Zustand-backed state (`test-data-store.ts`) for persistence across tab switches.
-- `ContextInput` shared component included for prompt enrichment.
+- Optional element picker (`useElementPicker` hook + `useElementStore`) — same pattern as Ideas/Code tabs. Scopes field detection to picked element's subtree via `getLastPickedElement()` in content script.
+- `ContextInput` shared component included for prompt enrichment (per-tab independent context via `tabKey="data"`).
 - Auto-detect on first tab mount via `useEffect` + ref guard (skips if fields already cached).
 - Field selection with checkboxes — only selected fields are sent to the AI prompt.
 - Two-column grid layout for detected fields to minimize vertical space.
 - Buttons in same row (`flex gap-2`) matching Ideas/Code tab pattern.
 - Content-script actions:
-  - `detect-form-fields` → returns normalized field descriptors.
+  - `detect-form-fields` → returns normalized field descriptors. Accepts optional `scopeToPickedElement` flag to scope to last picked DOM element.
   - `fill-form-data` → fills fields and dispatches `input` + `change` events.
 - Form helpers (`src/lib/form-data.ts`) for DOM detection/fill logic, fully testable.
 - Test-data prompt helpers in `prompt-builder.ts`:

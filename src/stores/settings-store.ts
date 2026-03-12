@@ -5,6 +5,8 @@ import { STORAGE_KEYS } from '../lib/constants';
 
 export type Theme = 'light' | 'dark' | 'system';
 
+export type ContextTab = 'ideas' | 'code' | 'a11y' | 'data';
+
 export interface Settings {
     provider: AIProviderType;
     apiKeys: Record<AIProviderType, string>;
@@ -15,7 +17,10 @@ export interface Settings {
     useProxy: boolean;
     theme: Theme;
     promptContext: string;
+    promptContexts: Record<ContextTab, string>;
 }
+
+const defaultPromptContexts: Record<ContextTab, string> = { ideas: '', code: '', a11y: '', data: '' };
 
 const defaultSettings: Settings = {
     provider: 'openai',
@@ -27,6 +32,7 @@ const defaultSettings: Settings = {
     useProxy: false,
     theme: 'light',
     promptContext: '',
+    promptContexts: { ...defaultPromptContexts },
 };
 
 interface SettingsState extends Settings {
@@ -82,6 +88,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
             useProxy: newState.useProxy,
             theme: newState.theme,
             promptContext: newState.promptContext,
+            promptContexts: newState.promptContexts,
         };
         chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: toStore });
     },
@@ -95,10 +102,19 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
                 stored.apiKeys = { openai: '', anthropic: '', google: '', [stored.provider]: stored.apiKey };
             }
             const apiKeys = stored.apiKeys ?? defaultSettings.apiKeys;
+            // Migrate from single promptContext to per-tab promptContexts
+            const promptContexts = stored.promptContexts ?? { ...defaultPromptContexts };
+            if (!stored.promptContexts && stored.promptContext) {
+                promptContexts.ideas = stored.promptContext;
+                promptContexts.code = stored.promptContext;
+                promptContexts.a11y = stored.promptContext;
+                promptContexts.data = stored.promptContext;
+            }
             set({
                 ...stored,
                 apiKeys,
                 apiKey: apiKeys[stored.provider] ?? '',
+                promptContexts,
             });
         }
     },

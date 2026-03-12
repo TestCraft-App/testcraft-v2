@@ -7,9 +7,13 @@ import {
     TEST_DATA_SYSTEM_MESSAGE,
 } from '../lib/prompt-builder';
 import { createAIProvider, AIProviderError } from '../lib/ai-provider';
+import { deriveElementLabel } from '../lib/element-label';
 import { useSettingsStore } from '../stores/settings-store';
 import { useAuthStore, canGenerate, isFreeTier } from '../stores/auth-store';
+import { useElementStore } from '../stores/element-store';
 import { useTestDataStore } from '../stores/test-data-store';
+import { useElementPicker } from '../hooks/useElementPicker';
+import { ElementPreview } from './ElementPreview';
 import { ContextInput } from './ContextInput';
 
 export function TestDataTab() {
@@ -17,6 +21,9 @@ export function TestDataTab() {
     const token = useAuthStore((s) => s.token);
     const signOut = useAuthStore((s) => s.signOut);
     const refreshUsage = useAuthStore((s) => s.refreshUsage);
+
+    const { pickedElement, isPicking } = useElementStore();
+    const { handlePickElement } = useElementPicker();
 
     const store = useTestDataStore();
     const hasAutoDetected = useRef(false);
@@ -40,7 +47,10 @@ export function TestDataTab() {
                 return;
             }
 
-            const response = await chrome.tabs.sendMessage(tab.id, { action: ACTIONS.DETECT_FORM_FIELDS });
+            const response = await chrome.tabs.sendMessage(tab.id, {
+                action: ACTIONS.DETECT_FORM_FIELDS,
+                payload: pickedElement ? { scopeToPickedElement: true } : undefined,
+            });
             const detected: DetectedFormField[] = Array.isArray(response?.fields) ? response.fields : [];
             store.setFields(detected);
             if (detected.length === 0) {
@@ -84,7 +94,7 @@ export function TestDataTab() {
                 authToken: useProxy ? (token ?? undefined) : undefined,
             });
 
-            const prompt = buildTestDataPrompt(selectedFields, pageContext, settings.promptContext);
+            const prompt = buildTestDataPrompt(selectedFields, pageContext, settings.promptContexts.data);
             let content = '';
             for await (const chunk of provider.stream(prompt, TEST_DATA_SYSTEM_MESSAGE)) {
                 content += chunk;
@@ -150,8 +160,23 @@ export function TestDataTab() {
     const allSelected = store.fields.length > 0 && selectedCount === store.fields.length;
     const selectedDataset = store.datasets.find((d) => d.id === store.selectedDatasetId);
 
+    const scopeLabel = pickedElement ? deriveElementLabel(pickedElement) : null;
+
     return (
         <div className="space-y-4">
+            <button
+                onClick={handlePickElement}
+                className={`w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                    isPicking
+                        ? 'bg-red-50 text-red-600 border border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
+                }`}
+            >
+                {isPicking ? 'Cancel Picking' : 'Pick Element (optional)'}
+            </button>
+
+            {pickedElement && <ElementPreview />}
+
             <div className="flex gap-2">
                 <button
                     onClick={handleDetectFields}
@@ -177,7 +202,13 @@ export function TestDataTab() {
                 </button>
             </div>
 
-            <ContextInput />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+                {scopeLabel
+                    ? `Scope: ${scopeLabel}`
+                    : 'Detecting on entire page'}
+            </p>
+
+            <ContextInput tabKey="data" />
 
             {store.fields.length > 0 && (
                 <DetectedFieldsList
