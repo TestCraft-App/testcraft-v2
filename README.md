@@ -44,9 +44,9 @@ You enter your API key in Settings. Requests go directly from the side panel to 
 No API key? No problem. Sign in with Google in the Settings tab to get **10 free AI generations per day** using `gpt-4o-mini`. Requests route through the TestCraft v2 API proxy, which validates your Google OAuth token and tracks daily usage in Firestore.
 
 - Sign in/out from the **Account** section at the top of Settings
-- Usage bar shows `N / 10 used today`
+- Usage bar shows `N / 10 today (resets at midnight UTC)` — always visible when signed in
 - Model dropdown locks to `gpt-4o-mini` while on free tier
-- Add your own API key anytime to unlock all providers and models with no limits
+- Use the **"Enable API Key" toggle** in AI Configuration to switch between free tier and your own key — no need to remove/re-enter your API key
 - Token expires after 1 hour — re-sign-in is seamless if still logged into Google
 
 ### Accessibility Checks (A11y Tab)
@@ -207,7 +207,7 @@ To load manually:
 ### Test
 
 ```bash
-npm test              # Run all 306 tests (unit + component + integration)
+npm test              # Run all 311 tests (unit + component + integration)
 npm run test:watch    # Watch mode during development
 npm run test:coverage # Coverage report
 ```
@@ -230,9 +230,9 @@ Chrome APIs are mocked globally via `src/test/chrome-mock.ts`. The mock provides
 
 The Settings tab is organized into four card sections with icons:
 
-**Account** — Sign in with Google for free AI features. Shows user avatar, name, email, usage bar ("N / 10 used today"), and Sign Out button when signed in.
+**Account** — Sign in with Google for free AI features. Shows user avatar, name, email, usage bar ("N / 10 today, resets at midnight UTC"), and Sign Out button when signed in. Usage bar is always visible when signed in.
 
-**AI Configuration** — Provider, API key (with helper text), and model selection. Provider and model dropdowns lock when using free tier (no API key + signed in).
+**AI Configuration** — "Enable API Key" toggle, provider, API key (with validation indicator), and model selection. When the toggle is off, provider/key/model controls are disabled and the free tier model is used. When on, all controls are enabled and API key validation runs with a checkmark/X indicator.
 
 **Test Configuration** — Framework, language, and Page Object Model toggle switch.
 
@@ -300,7 +300,7 @@ Ship a working v2 that's better than v1 in every way.
 
 | 1.9 | Free tier with Google OAuth (10/day gpt-4o-mini, auth store, proxy integration) | Done |
 
-**306 tests across 30 files. Build: ~932 KB (includes axe-core bundled in content script).**
+**311 tests across 30 files. Build: ~933 KB (includes axe-core bundled in content script).**
 
 ### Phase 2 — Test Intelligence
 

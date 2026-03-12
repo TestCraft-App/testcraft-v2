@@ -29,6 +29,9 @@ const languageLabels: Record<Language, string> = {
 const selectClasses =
     'w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-sm outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/20';
 
+const disabledSelectClasses =
+    'w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-400 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500';
+
 const labelClasses = 'block text-xs font-medium text-gray-600 mb-1 dark:text-gray-400';
 
 const themeOptions: { value: Theme; label: string }[] = [
@@ -41,7 +44,8 @@ type KeyStatus = 'idle' | 'validating' | 'valid' | 'invalid';
 
 export function SettingsTab() {
     const settings = useSettingsStore();
-    const { provider, apiKey, model, framework, language, usePOM, theme, updateSettings, loadFromStorage } = settings;
+    const { provider, apiKey, model, framework, language, usePOM, useOwnKey, theme, updateSettings, loadFromStorage } =
+        settings;
     const { user, dailyUsage, isSigningIn, signIn, signOut } = useAuthStore();
     const token = useAuthStore((s) => s.token);
     const [keyStatus, setKeyStatus] = useState<KeyStatus>('idle');
@@ -49,7 +53,7 @@ export function SettingsTab() {
 
     const hasValidKey = keyStatus === 'valid';
     const isSignedIn = !!token;
-    const showFreeTier = isSignedIn && !hasValidKey;
+    const apiKeyEnabled = useOwnKey && hasValidKey;
 
     useEffect(() => {
         loadFromStorage();
@@ -111,12 +115,12 @@ export function SettingsTab() {
                             </div>
                         </div>
 
-                        {showFreeTier && (
+                        {isSignedIn && (
                             <div>
                                 <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
                                     <span>Free tier usage</span>
                                     <span>
-                                        {dailyUsage} / {DAILY_LIMIT} used today
+                                        {dailyUsage} / {DAILY_LIMIT} today (resets at midnight UTC)
                                     </span>
                                 </div>
                                 <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
@@ -166,6 +170,35 @@ export function SettingsTab() {
                     AI Configuration
                 </h3>
 
+                {/* Enable API Key toggle */}
+                <div className="flex items-center justify-between">
+                    <label htmlFor="useOwnKey" className="text-sm text-gray-700 dark:text-gray-300">
+                        Enable API Key
+                    </label>
+                    <button
+                        id="useOwnKey"
+                        role="switch"
+                        aria-checked={useOwnKey}
+                        onClick={() => updateSettings({ useOwnKey: !useOwnKey })}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                            useOwnKey ? 'bg-indigo-600 dark:bg-indigo-500' : 'bg-gray-300 dark:bg-gray-600'
+                        }`}
+                    >
+                        <span
+                            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                                useOwnKey ? 'translate-x-4' : 'translate-x-0'
+                            }`}
+                        />
+                    </button>
+                </div>
+                {!useOwnKey && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                        {isSignedIn
+                            ? `Using free tier (${FREE_TIER_MODEL}). Enable to use your own key with any model.`
+                            : 'Enable to use your own API key for unlimited usage with any model.'}
+                    </p>
+                )}
+
                 <div>
                     <label htmlFor="provider" className={labelClasses}>
                         AI Provider
@@ -174,7 +207,8 @@ export function SettingsTab() {
                         id="provider"
                         value={provider}
                         onChange={(e) => updateSettings({ provider: e.target.value as AIProviderType })}
-                        className={selectClasses}
+                        className={useOwnKey ? selectClasses : disabledSelectClasses}
+                        disabled={!useOwnKey}
                     >
                         {(Object.keys(providerLabels) as AIProviderType[]).map((p) => (
                             <option key={p} value={p}>
@@ -195,9 +229,10 @@ export function SettingsTab() {
                             value={apiKey}
                             onChange={(e) => updateSettings({ apiKey: e.target.value })}
                             placeholder={`Enter your ${providerLabels[provider]} API key`}
-                            className={`${selectClasses} pr-8`}
+                            className={`${useOwnKey ? selectClasses : disabledSelectClasses} pr-8`}
+                            disabled={!useOwnKey}
                         />
-                        {keyStatus !== 'idle' && (
+                        {useOwnKey && keyStatus !== 'idle' && (
                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm" aria-label={keyStatus}>
                                 {keyStatus === 'validating' && (
                                     <svg className="h-4 w-4 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none">
@@ -218,13 +253,13 @@ export function SettingsTab() {
                             </span>
                         )}
                     </div>
-                    <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                        {keyStatus === 'invalid'
-                            ? `Invalid ${providerLabels[provider]} API key.`
-                            : showFreeTier
-                              ? 'Add your own key for unlimited usage with any model.'
-                              : 'Your key is stored locally and never sent to our servers.'}
-                    </p>
+                    {useOwnKey && (
+                        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                            {keyStatus === 'invalid'
+                                ? `Invalid ${providerLabels[provider]} API key.`
+                                : 'Your key is stored locally and never sent to our servers.'}
+                        </p>
+                    )}
                 </div>
 
                 <div>
@@ -233,12 +268,12 @@ export function SettingsTab() {
                     </label>
                     <select
                         id="model"
-                        value={hasValidKey ? model : FREE_TIER_MODEL}
+                        value={apiKeyEnabled ? model : FREE_TIER_MODEL}
                         onChange={(e) => updateSettings({ model: e.target.value })}
-                        className={selectClasses}
-                        disabled={!hasValidKey}
+                        className={apiKeyEnabled ? selectClasses : disabledSelectClasses}
+                        disabled={!apiKeyEnabled}
                     >
-                        {hasValidKey ? (
+                        {apiKeyEnabled ? (
                             models.map((m) => (
                                 <option key={m} value={m}>
                                     {m}
@@ -246,7 +281,7 @@ export function SettingsTab() {
                             ))
                         ) : (
                             <option value={FREE_TIER_MODEL}>
-                                {FREE_TIER_MODEL}{showFreeTier ? ' (free tier)' : ''}
+                                {FREE_TIER_MODEL}{!useOwnKey ? ' (free tier)' : ''}
                             </option>
                         )}
                     </select>

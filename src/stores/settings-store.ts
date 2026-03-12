@@ -15,6 +15,7 @@ export interface Settings {
     language: Language;
     usePOM: boolean;
     useProxy: boolean;
+    useOwnKey: boolean;
     theme: Theme;
     promptContext: string;
     promptContexts: Record<ContextTab, string>;
@@ -30,6 +31,7 @@ const defaultSettings: Settings = {
     language: 'typescript',
     usePOM: false,
     useProxy: false,
+    useOwnKey: false,
     theme: 'light',
     promptContext: '',
     promptContexts: { ...defaultPromptContexts },
@@ -86,6 +88,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
             language: newState.language,
             usePOM: newState.usePOM,
             useProxy: newState.useProxy,
+            useOwnKey: newState.useOwnKey,
             theme: newState.theme,
             promptContext: newState.promptContext,
             promptContexts: newState.promptContexts,

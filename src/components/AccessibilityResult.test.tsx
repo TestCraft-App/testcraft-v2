@@ -101,7 +101,7 @@ describe('AccessibilityResult', () => {
     });
 
     it('Analyze creates provider with direct config when API key is set', async () => {
-        useSettingsStore.setState({ apiKey: 'sk-test', provider: 'anthropic', model: 'claude-sonnet-4-6' });
+        useSettingsStore.setState({ apiKey: 'sk-test', provider: 'anthropic', model: 'claude-sonnet-4-6', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createStreamingProvider(['done']));
 
         const user = userEvent.setup();
@@ -120,7 +120,7 @@ describe('AccessibilityResult', () => {
     });
 
     it('Analyze shows error when no key and no token', async () => {
-        useSettingsStore.setState({ apiKey: '' });
+        useSettingsStore.setState({ apiKey: '', useOwnKey: false });
         useAuthStore.setState({ token: null });
 
         const user = userEvent.setup();
@@ -128,13 +128,13 @@ describe('AccessibilityResult', () => {
         await user.click(screen.getByText('Analyze'));
 
         await waitFor(() => {
-            expect(screen.getByText(/Sign in with Google or add an API key/)).toBeInTheDocument();
+            expect(screen.getByText(/Sign in with Google or enable your API key/)).toBeInTheDocument();
         });
         expect(mockCreateAIProvider).not.toHaveBeenCalled();
     });
 
     it('Analyze sets explanation in store after streaming', async () => {
-        useSettingsStore.setState({ apiKey: 'sk-test' });
+        useSettingsStore.setState({ apiKey: 'sk-test', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createStreamingProvider(['Fix the', ' alt text']));
 
         const user = userEvent.setup();
@@ -147,7 +147,7 @@ describe('AccessibilityResult', () => {
     });
 
     it('Analyze shows "Analyzing..." during streaming', async () => {
-        useSettingsStore.setState({ apiKey: 'sk-test' });
+        useSettingsStore.setState({ apiKey: 'sk-test', useOwnKey: true });
         // Use a provider that never resolves to keep the loading state
         let resolveStream!: () => void;
         const hangingProvider = {
@@ -201,7 +201,7 @@ describe('AccessibilityResult', () => {
     });
 
     it('Analyze shows error on provider failure', async () => {
-        useSettingsStore.setState({ apiKey: 'sk-test' });
+        useSettingsStore.setState({ apiKey: 'sk-test', useOwnKey: true });
         mockCreateAIProvider.mockReturnValue(createErrorProvider(500, 'Server error'));
 
         const user = userEvent.setup();

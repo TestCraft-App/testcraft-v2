@@ -2,7 +2,7 @@
 
 This document describes every feature in TestCraft v2, what it does from a user perspective, how it works internally, and where the code lives.
 
-Last updated: Scoped element picker for Data tab + per-tab prompt context
+Last updated: Enable API Key toggle + always-visible usage bar + UTC reset label
 
 ---
 
@@ -149,11 +149,13 @@ The Settings tab is organized into **four card sections**, each with an icon hea
 
 **Account** (user icon)
 - "Sign in with Google" button (when not signed in) with subtext for free tier (10/day gpt-4o-mini)
-- When signed in: user avatar + name + email, usage progress bar ("N / 10 used today"), "Sign Out" button
+- When signed in: user avatar + name + email, usage progress bar ("N / 10 today, resets at midnight UTC"), "Sign Out" button
+- Usage bar is always visible when signed in, regardless of API key state
 
 **AI Configuration** (brain icon)
+- **"Enable API Key" toggle** — switches between free tier and own API key mode. When off, provider/key/model controls are disabled.
 - AI Provider dropdown (OpenAI, Anthropic, Google)
-- API Key password input with helper text explaining where to get a key for the selected provider
+- API Key password input with async validation indicator (spinner → checkmark/X)
 - Model dropdown (provider-specific, changes when provider changes)
 
 **Test Configuration** (code icon)
@@ -176,7 +178,8 @@ The Settings tab is organized into **four card sections**, each with an icon hea
 
 **Smart behaviors:**
 - Changing the provider automatically selects that provider's default model (e.g. switching to Anthropic selects `claude-haiku-4-5-20251001`, switching to OpenAI selects `gpt-4o-mini`).
-- When using the free tier (signed in, no API key), Provider and Model dropdowns are locked to OpenAI / `gpt-4o-mini`.
+- When "Enable API Key" is off, Provider/Key/Model controls are disabled — generation uses free tier (gpt-4o-mini via proxy). Toggle on to use your own key with any provider and model.
+- Users can keep their API key saved and toggle between free tier and their own key without re-entering credentials.
 - Changing to Cypress automatically limits language options to JavaScript and TypeScript. If you were on Python, it resets to JavaScript.
 - All settings persist in `chrome.storage.local` under the key `settings`.
 
@@ -444,8 +447,8 @@ axe-core is bundled into the content script (~500KB). It runs deterministically 
 **Settings tab → Account section** (at the top, before AI Configuration):
 
 - **Not signed in**: "Sign in with Google" button with subtext "Sign in for free AI features (10/day with gpt-4o-mini)"
-- **Signed in**: User avatar + name + email, usage progress bar ("5 / 10 used today"), "Sign Out" button
-- **Free tier active** (signed in, no API key): Provider and Model dropdowns are disabled. Model shows "gpt-4o-mini (free tier)". API key field shows hint "Add your own key for unlimited usage with any model."
+- **Signed in**: User avatar + name + email, usage progress bar ("5 / 10 today (resets at midnight UTC)"), "Sign Out" button. Usage bar is always visible when signed in.
+- **"Enable API Key" toggle off** (free tier): Provider, API key, and Model controls are disabled. Model shows "gpt-4o-mini (free tier)". Users can save their API key and toggle between free tier and own key without re-entering it.
 
 ### How it works
 
@@ -460,10 +463,11 @@ axe-core is bundled into the content script (~500KB). It runs deterministically 
 8. Auth store persists to `chrome.storage.local` under `STORAGE_KEYS.AUTH`
 9. Auth store fetches usage count from `GET /api/v2/auth/me`
 
-**Generation mode auto-detection** (in `useAIGenerate`):
-- Has API key → direct provider (any provider/model, current behavior)
-- No API key + signed in → proxy provider (gpt-4o-mini, v2 API with Bearer token)
-- Neither → error: "Sign in with Google or add an API key in Settings to generate."
+**Generation mode determined by "Enable API Key" toggle** (in `useAIGenerate`, `TestDataTab`, `AccessibilityResult`):
+- Toggle on + has API key → direct provider (any provider/model)
+- Toggle off + signed in → proxy provider (gpt-4o-mini, v2 API with Bearer token)
+- Toggle on + no key → error: "Add an API key in Settings to generate."
+- Toggle off + not signed in → error: "Sign in with Google or enable your API key in Settings to generate."
 
 **Token expiration**: Google ID tokens expire after 1 hour. On 401 from API → auth store clears token, user sees sign-in button. Re-sign-in is seamless if still logged into Google.
 
@@ -476,7 +480,8 @@ axe-core is bundled into the content script (~500KB). It runs deterministically 
 | `src/stores/auth-store.ts` | Zustand store: user, token, dailyUsage, signIn/signOut/fetchUsage/refreshUsage |
 | `src/stores/auth-store.test.ts` | 17 tests for auth store |
 | `src/entrypoints/background.ts` | Handles `GOOGLE_SIGN_IN`: builds OAuth URL, launches auth flow, parses JWT |
-| `src/components/SettingsTab.tsx` | Account section UI (sign-in/out, avatar, usage bar, model locking) |
+| `src/stores/settings-store.ts` | `useOwnKey` toggle state, persisted to chrome.storage |
+| `src/components/SettingsTab.tsx` | Account section UI (sign-in/out, avatar, usage bar), "Enable API Key" toggle, model locking |
 | `src/hooks/useAIGenerate.ts` | Auth-aware generation: auto-determines proxy mode, handles 401 |
 | `src/lib/ai-provider.ts` | `createProxyProvider(model, authToken)` — sends Bearer token to v2 API |
 | `src/lib/constants.ts` | `API_V2_URL`, `FREE_TIER_MODEL`, `DAILY_LIMIT`, `GOOGLE_SIGN_IN` action |
